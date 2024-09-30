@@ -158,3 +158,63 @@ def handle_leave(data):
     game_id = data['game_id']
     leave_room(f'game_{game_id}')
     emit('leave_success', {'message': f'Left game {game_id}'}, room=f'game_{game_id}')
+
+# New API endpoints for mobile app
+@app.route('/api/games')
+def api_games():
+    games = Game.query.filter_by(is_complete=False).order_by(Game.start_time).all()
+    return jsonify([{
+        'id': game.id,
+        'pot_size': game.pot_size,
+        'entry_value': game.entry_value,
+        'max_players': game.max_players,
+        'players': [{'id': p.id, 'ethereum_address': p.ethereum_address} for p in game.players],
+        'start_time': game.start_time.isoformat() if game.start_time else None,
+    } for game in games])
+
+@app.route('/api/games/<int:game_id>')
+def api_game_details(game_id):
+    game = Game.query.get_or_404(game_id)
+    return jsonify({
+        'id': game.id,
+        'pot_size': game.pot_size,
+        'entry_value': game.entry_value,
+        'max_players': game.max_players,
+        'players': [{'id': p.id, 'ethereum_address': p.ethereum_address} for p in game.players],
+        'start_time': game.start_time.isoformat() if game.start_time else None,
+        'time_limit': game.time_limit,
+    })
+
+@app.route('/api/games/<int:game_id>/questions')
+def api_game_questions(game_id):
+    questions = Question.query.filter_by(game_id=game_id).all()
+    return jsonify([{
+        'id': q.id,
+        'phrase': q.phrase,
+    } for q in questions])
+
+@app.route('/api/games/<int:game_id>/submit', methods=['POST'])
+def api_submit_answers(game_id):
+    game = Game.query.get_or_404(game_id)
+    data = request.json
+    player = Player.query.filter_by(game_id=game.id, ethereum_address=data['ethereum_address']).first()
+    
+    if not player:
+        return jsonify({'error': 'Player not found'}), 404
+
+    answers = {int(a['question_id']): a['answer'] for a in data['answers']}
+    questions = Question.query.filter_by(game_id=game.id).all()
+    
+    score = check_answers(questions, [answers.get(q.id, '') for q in questions])
+    player.score = score
+    db.session.commit()
+
+    socketio.emit('player_score_update', {'game_id': game.id, 'player_id': player.id, 'score': score}, namespace='/game')
+
+    if score == len(questions):
+        game.is_complete = True
+        db.session.commit()
+        socketio.emit('game_complete', {'game_id': game.id, 'winner_id': player.id}, namespace='/game')
+        return jsonify({'message': 'Congratulations! You won the game!', 'score': score, 'game_complete': True})
+    
+    return jsonify({'message': 'Answers submitted successfully', 'score': score, 'game_complete': False})
