@@ -1,21 +1,13 @@
 import os
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, session
-from flask_socketio import SocketIO, emit, join_room, leave_room
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
+from flask import render_template, redirect, url_for, flash, request, jsonify, session
+from flask_socketio import emit, join_room, leave_room
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from models import Admin, Game, Question, Player
 from forms import CreateGameForm, JoinGameForm
 from utils import check_answers, determine_winner
-
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-
-socketio = SocketIO(app)
-db = SQLAlchemy(app)
+from app import app, db, socketio
 
 def admin_required(f):
     @wraps(f)
@@ -55,31 +47,39 @@ def admin_dashboard():
 @admin_required
 def create_game():
     form = CreateGameForm()
-    if form.validate_on_submit():
-        app.logger.info("Form validated successfully")
-        game = Game(
-            time_limit=form.time_limit.data,
-            max_players=form.max_players.data,
-            pot_size=form.pot_size.data,
-            entry_value=form.entry_value.data,
-            start_time=form.start_time.data
-        )
-        db.session.add(game)
-        db.session.commit()
+    if request.method == 'POST':
+        app.logger.info(f"Received POST request: {request.form}")
+        if form.validate_on_submit():
+            app.logger.info("Form validated successfully")
+            try:
+                game = Game(
+                    time_limit=form.time_limit.data,
+                    max_players=form.max_players.data,
+                    pot_size=form.pot_size.data,
+                    entry_value=form.entry_value.data,
+                    start_time=form.start_time.data
+                )
+                db.session.add(game)
+                db.session.commit()
 
-        for i in range(12):
-            phrase = getattr(form, f'phrase_{i}').data
-            answer = getattr(form, f'answer_{i}').data
-            if phrase and answer:
-                question = Question(game_id=game.id, phrase=phrase, answer=answer)
-                db.session.add(question)
-        
-        db.session.commit()
-        socketio.emit('new_game', {'game_id': game.id, 'pot_size': game.pot_size, 'start_time': game.start_time.isoformat()}, namespace='/game')
-        flash('Game created successfully', 'success')
-        return redirect(url_for('admin_dashboard'))
-    else:
-        app.logger.error(f"Form validation failed. Errors: {form.errors}")
+                for i in range(12):
+                    phrase = getattr(form, f'phrase_{i}').data
+                    answer = getattr(form, f'answer_{i}').data
+                    if phrase and answer:
+                        question = Question(game_id=game.id, phrase=phrase, answer=answer)
+                        db.session.add(question)
+                
+                db.session.commit()
+                socketio.emit('new_game', {'game_id': game.id, 'pot_size': game.pot_size, 'start_time': game.start_time.isoformat()}, namespace='/game')
+                flash('Game created successfully', 'success')
+                return redirect(url_for('admin_dashboard'))
+            except Exception as e:
+                app.logger.error(f"Error creating game: {str(e)}")
+                db.session.rollback()
+                flash('An error occurred while creating the game. Please try again.', 'error')
+        else:
+            app.logger.error(f"Form validation failed. Errors: {form.errors}")
+            flash('Please correct the errors in the form.', 'error')
     return render_template('admin/create_game.html', form=form)
 
 @app.route('/game/<int:game_id>/join', methods=['GET', 'POST'])
