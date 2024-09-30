@@ -159,13 +159,16 @@ def game_result(game_id):
 @app.route('/admin/start_game/<int:game_id>', methods=['POST'])
 @admin_required
 def start_game(game_id):
+    app.logger.info(f"Start game request received for game ID: {game_id}")
     game = Game.query.get_or_404(game_id)
     if game.start_time or game.is_complete:
+        app.logger.warning(f"Cannot start game {game_id}: already started or completed")
         return jsonify({'success': False, 'message': 'Game has already started or is completed'}), 400
     
     game.start_time = datetime.utcnow()
     db.session.commit()
     
+    app.logger.info(f"Game {game_id} started successfully")
     socketio.emit('game_started', {'game_id': game.id}, namespace='/game')
     
     return jsonify({'success': True, 'message': 'Game started successfully'})
