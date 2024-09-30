@@ -49,7 +49,7 @@ def create_game():
     form = CreateGameForm()
     if request.method == 'POST':
         app.logger.info(f"Received POST request: {request.form}")
-        if form.validate_on_submit():
+        if form.validate():
             app.logger.info("Form validated successfully")
             try:
                 game = Game(

@@ -40,7 +40,7 @@ class CreateGameForm(FlaskForm):
         valid_pairs = [pair for pair in phrase_answer_pairs if pair[0] and pair[1]]
         
         if len(valid_pairs) < 1:
-            self.phrase_0.errors.append("At least one phrase-answer pair is required.")
+            self.errors['phrases'] = ["At least one phrase-answer pair is required."]
             return False
         
         return True
