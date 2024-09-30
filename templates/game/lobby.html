@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Game Lobby</h1>
+
+<div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <h2 class="text-2xl font-bold mb-4">Game #{{ game.id }}</h2>
+    <p class="mb-2">Pot Size: ${{ "%.2f"|format(game.pot_size) }}</p>
+    <p class="mb-2">Entry Value: ${{ "%.2f"|format(game.entry_value) }}</p>
+    <p class="mb-2">Players: {{ players|length }} / {{ game.max_players }}</p>
+    <p class="mb-2">Start Time: <span id="start-time" data-start-time="{{ game.start_time.isoformat() }}">{{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span></p>
+    <p class="mb-2">Time until start: <span id="countdown"></span></p>
+</div>
+
+<h2 class="text-2xl font-bold mb-4">Players in Lobby</h2>
+
+<ul class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    {% for player in players %}
+    <li class="mb-2">{{ player.ethereum_address }}</li>
+    {% endfor %}
+</ul>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateCountdown() {
+    const startTime = new Date(document.getElementById('start-time').dataset.startTime);
+    const now = new Date();
+    const timeLeft = startTime - now;
+
+    if (timeLeft <= 0) {
+        document.getElementById('countdown').textContent = "Game has started!";
+        window.location.href = "{{ url_for('play_game', game_id=game.id) }}";
+    } else {
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        document.getElementById('countdown').textContent = 
+            (minutes < 10 ? "0" + minutes : minutes) + ":" + 
+            (seconds < 10 ? "0" + seconds : seconds);
+    }
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+</script>
+{% endblock %}

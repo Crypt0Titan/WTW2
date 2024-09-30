@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Create New Game</h1>
+
+<form method="POST" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    {{ form.hidden_tag() }}
+    
+    <div class="mb-4">
+        {{ form.time_limit.label(class="block text-gray-700 text-sm font-bold mb-2") }}
+        {{ form.time_limit(class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline") }}
+    </div>
+    
+    <div class="mb-4">
+        {{ form.max_players.label(class="block text-gray-700 text-sm font-bold mb-2") }}
+        {{ form.max_players(class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline") }}
+    </div>
+    
+    <div class="mb-4">
+        {{ form.pot_size.label(class="block text-gray-700 text-sm font-bold mb-2") }}
+        {{ form.pot_size(class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline") }}
+    </div>
+    
+    <div class="mb-4">
+        {{ form.entry_value.label(class="block text-gray-700 text-sm font-bold mb-2") }}
+        {{ form.entry_value(class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline") }}
+    </div>
+    
+    <div class="mb-4">
+        {{ form.start_time.label(class="block text-gray-700 text-sm font-bold mb-2") }}
+        {{ form.start_time(class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline") }}
+    </div>
+    
+    <h2 class="text-xl font-bold mb-4">Questions</h2>
+    
+    {% for i in range(12) %}
+    <div class="mb-4">
+        <h3 class="text-lg font-semibold mb-2">Question {{ i + 1 }}</h3>
+        <div class="mb-2">
+            {{ form[f'phrase_{i}'].label(class="block text-gray-700 text-sm font-bold mb-2") }}
+            {{ form[f'phrase_{i}'](class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline") }}
+        </div>
+        <div class="mb-2">
+            {{ form[f'answer_{i}'].label(class="block text-gray-700 text-sm font-bold mb-2") }}
+            {{ form[f'answer_{i}'](class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline") }}
+        </div>
+    </div>
+    {% endfor %}
+    
+    <div class="flex items-center justify-between">
+        {{ form.submit(class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline") }}
+    </div>
+</form>
+{% endblock %}

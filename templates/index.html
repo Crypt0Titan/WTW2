@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Welcome to Win The Wallet</h1>
+
+<div class="bg-white p-6 rounded-lg shadow-md mb-6">
+    <h2 class="text-xl font-semibold mb-4">Important Information</h2>
+    <p class="mb-2">To be eligible for rewards, you need to be holding $25 worth of Coin X.</p>
+    <p class="mb-2">Contract Address: <span class="font-mono bg-gray-100 p-1 rounded">0x1234567890123456789012345678901234567890</span></p>
+    <p class="mb-2">
+        <a href="#" class="text-blue-600 hover:underline">Buy Coin X on Uniswap</a>
+    </p>
+</div>
+
+<h2 class="text-2xl font-bold mb-4">Available Games</h2>
+
+<div class="mb-4">
+    <label for="sort-select" class="mr-2">Sort by:</label>
+    <select id="sort-select" class="border rounded p-1">
+        <option value="pot-size">Pot Size</option>
+        <option value="start-time">Start Time</option>
+    </select>
+</div>
+
+<div id="games-list">
+    {% for game in games %}
+    <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+        <h3 class="text-xl font-semibold mb-2">Game #{{ game.id }}</h3>
+        <p class="mb-1">Pot Size: ${{ "%.2f"|format(game.pot_size) }}</p>
+        <p class="mb-1">Entry Value: ${{ "%.2f"|format(game.entry_value) }}</p>
+        <p class="mb-1">Players: {{ game.players|length }} / {{ game.max_players }}</p>
+        <p class="mb-1">Start Time: {{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        <a href="{{ url_for('join_game', game_id=game.id) }}" class="btn btn-blue mt-2">Join Game</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('sort-select').addEventListener('change', function() {
+    const sortBy = this.value;
+    const gamesList = document.getElementById('games-list');
+    const games = Array.from(gamesList.children);
+
+    games.sort((a, b) => {
+        if (sortBy === 'pot-size') {
+            const potA = parseFloat(a.querySelector('p:nth-child(2)').textContent.split('$')[1]);
+            const potB = parseFloat(b.querySelector('p:nth-child(2)').textContent.split('$')[1]);
+            return potB - potA;
+        } else {
+            const timeA = new Date(a.querySelector('p:nth-child(5)').textContent.split(': ')[1]);
+            const timeB = new Date(b.querySelector('p:nth-child(5)').textContent.split(': ')[1]);
+            return timeA - timeB;
+        }
+    });
+
+    games.forEach(game => gamesList.appendChild(game));
+});
+</script>
+{% endblock %}

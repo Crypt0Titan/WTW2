@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
+
+<a href="{{ url_for('create_game') }}" class="btn btn-blue mb-6">Create New Game</a>
+
+<h2 class="text-2xl font-bold mb-4">Games</h2>
+
+<div class="overflow-x-auto">
+    <table class="w-full bg-white shadow-md rounded">
+        <thead>
+            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                <th class="py-3 px-6 text-left">ID</th>
+                <th class="py-3 px-6 text-left">Start Time</th>
+                <th class="py-3 px-6 text-left">Pot Size</th>
+                <th class="py-3 px-6 text-left">Players</th>
+                <th class="py-3 px-6 text-left">Status</th>
+                <th class="py-3 px-6 text-left">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="text-gray-600 text-sm font-light">
+            {% for game in games %}
+            <tr class="border-b border-gray-200 hover:bg-gray-100">
+                <td class="py-3 px-6 text-left whitespace-nowrap">{{ game.id }}</td>
+                <td class="py-3 px-6 text-left">{{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') if game.start_time else 'Not started' }}</td>
+                <td class="py-3 px-6 text-left">${{ "%.2f"|format(game.pot_size) }}</td>
+                <td class="py-3 px-6 text-left">{{ game.players|length }} / {{ game.max_players }}</td>
+                <td class="py-3 px-6 text-left">
+                    {% if game.is_complete %}
+                    <span class="bg-gray-200 text-gray-700 py-1 px-3 rounded-full text-xs">Completed</span>
+                    {% else %}
+                    <span class="bg-green-200 text-green-700 py-1 px-3 rounded-full text-xs">Active</span>
+                    {% endif %}
+                </td>
+                <td class="py-3 px-6 text-left">
+                    {% if not game.is_complete and not game.start_time %}
+                    <button class="start-game-btn bg-blue-500 text-white py-1 px-3 rounded text-xs" data-game-id="{{ game.id }}">Start Game</button>
+                    {% endif %}
+                    <a href="{{ url_for('game_stats', game_id=game.id) }}" class="bg-green-500 text-white py-1 px-3 rounded text-xs">View Stats</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}
