@@ -233,3 +233,12 @@ def api_submit_answers(game_id):
         return jsonify({'message': 'Congratulations! You won the game!', 'score': score, 'game_complete': True})
     
     return jsonify({'message': 'Answers submitted successfully', 'score': score, 'game_complete': False})
+
+# New route to check if admin user exists
+@app.route('/check-admin')
+def check_admin():
+    admin = Admin.query.first()
+    if admin:
+        return jsonify({'admin_exists': True, 'username': admin.username})
+    else:
+        return jsonify({'admin_exists': False})
