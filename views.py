@@ -156,14 +156,19 @@ def game_result(game_id):
     players = Player.query.filter_by(game_id=game.id).order_by(Player.score.desc()).all()
     return render_template('game/result.html', game=game, winner=winner, players=players)
 
-@app.route('/admin/start_game/<int:game_id>')
+@app.route('/admin/start_game/<int:game_id>', methods=['POST'])
 @admin_required
 def start_game(game_id):
     game = Game.query.get_or_404(game_id)
+    if game.start_time or game.is_complete:
+        return jsonify({'success': False, 'message': 'Game has already started or is completed'}), 400
+    
     game.start_time = datetime.utcnow()
     db.session.commit()
+    
     socketio.emit('game_started', {'game_id': game.id}, namespace='/game')
-    return redirect(url_for('admin_dashboard'))
+    
+    return jsonify({'success': True, 'message': 'Game started successfully'})
 
 @app.route('/admin/game_stats/<int:game_id>')
 @admin_required
