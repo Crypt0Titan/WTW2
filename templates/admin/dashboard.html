@@ -32,14 +32,14 @@
                 <td class="py-3 px-6 text-left">
                     {% if game.is_complete %}
                         <span class="bg-gray-200 text-gray-700 py-1 px-3 rounded-full text-xs">Completed</span>
-                    {% elif game.start_time and now() >= game.start_time %}
+                    {% elif game.start_time and game.start_time <= now %}
                         <span class="bg-green-200 text-green-700 py-1 px-3 rounded-full text-xs">In Progress</span>
                     {% else %}
                         <span class="bg-yellow-200 text-yellow-700 py-1 px-3 rounded-full text-xs">Not Started</span>
                     {% endif %}
                 </td>
                 <td class="py-3 px-6 text-left">
-                    {% if not game.is_complete and (not game.start_time or now() < game.start_time) %}
+                    {% if not game.is_complete and (not game.start_time or game.start_time > now) %}
                         <button class="start-game-btn bg-blue-500 hover:bg-blue-700 text-white py-1 px-3 rounded text-xs mr-2" data-game-id="{{ game.id }}">Start Game</button>
                     {% endif %}
                     <a href="{{ url_for('game_stats', game_id=game.id) }}" class="bg-green-500 hover:bg-green-700 text-white py-1 px-3 rounded text-xs">View Stats</a>

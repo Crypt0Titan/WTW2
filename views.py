@@ -57,7 +57,8 @@ def admin_logout():
 @admin_required
 def admin_dashboard():
     games = Game.query.order_by(Game.created_at.desc()).all()
-    return render_template('admin/dashboard.html', games=games, now=datetime.utcnow)
+    current_time = datetime.utcnow()
+    return render_template('admin/dashboard.html', games=games, now=current_time)
 
 @app.route('/admin/create_game', methods=['GET', 'POST'])
 @admin_required
