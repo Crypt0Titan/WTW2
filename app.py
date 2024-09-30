@@ -17,8 +17,9 @@ app.config["SECRET_KEY"] = os.urandom(24)
 db.init_app(app)
 socketio = SocketIO(app)
 
+from views import *
+
 with app.app_context():
-    from views import *
     db.create_all()
 
 if __name__ == '__main__':

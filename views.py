@@ -1,19 +1,12 @@
-import logging
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, session
-from flask_socketio import SocketIO, emit, join_room, leave_room
-from models import db, Admin, Game, Question, Player
+from flask import render_template, request, redirect, url_for, flash, jsonify, session
+from app import app, db, socketio
+from models import Admin, Game, Question, Player
 from forms import CreateGameForm, JoinGameForm
 from utils import check_answers, determine_winner
-from datetime import datetime, timedelta
-from functools import wraps
 from werkzeug.security import check_password_hash
-
-app = Flask(__name__)
-socketio = SocketIO(app)
-
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+from functools import wraps
+from datetime import datetime, timedelta
+from flask_socketio import emit, join_room, leave_room
 
 def admin_required(f):
     @wraps(f)
@@ -51,36 +44,27 @@ def admin_dashboard():
 def create_game():
     form = CreateGameForm()
     if form.validate_on_submit():
-        try:
-            game = Game(
-                time_limit=form.time_limit.data,
-                max_players=form.max_players.data,
-                pot_size=form.pot_size.data,
-                entry_value=form.entry_value.data,
-                start_time=form.start_time.data
-            )
-            db.session.add(game)
-            db.session.commit()
+        game = Game(
+            time_limit=form.time_limit.data,
+            max_players=form.max_players.data,
+            pot_size=form.pot_size.data,
+            entry_value=form.entry_value.data,
+            start_time=form.start_time.data
+        )
+        db.session.add(game)
+        db.session.commit()
 
-            for i in range(12):
-                phrase = getattr(form, f'phrase_{i}').data
-                answer = getattr(form, f'answer_{i}').data
-                if phrase and answer:
-                    question = Question(game_id=game.id, phrase=phrase, answer=answer)
-                    db.session.add(question)
-            
-            db.session.commit()
-            socketio.emit('new_game', {'game_id': game.id, 'pot_size': game.pot_size, 'start_time': game.start_time.isoformat()}, namespace='/game')
-            flash('Game created successfully')
-            logger.info(f"Game {game.id} created successfully")
-            return redirect(url_for('admin_dashboard'))
-        except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error creating game: {str(e)}")
-            flash('An error occurred while creating the game. Please try again.', 'error')
-    else:
-        logger.warning(f"Form validation failed. Errors: {form.errors}")
-    
+        for i in range(12):
+            phrase = getattr(form, f'phrase_{i}').data
+            answer = getattr(form, f'answer_{i}').data
+            if phrase and answer:
+                question = Question(game_id=game.id, phrase=phrase, answer=answer)
+                db.session.add(question)
+        
+        db.session.commit()
+        socketio.emit('new_game', {'game_id': game.id, 'pot_size': game.pot_size, 'start_time': game.start_time.isoformat()}, namespace='/game')
+        flash('Game created successfully')
+        return redirect(url_for('admin_dashboard'))
     return render_template('admin/create_game.html', form=form)
 
 @app.route('/game/<int:game_id>/join', methods=['GET', 'POST'])
@@ -175,6 +159,7 @@ def handle_leave(data):
     leave_room(f'game_{game_id}')
     emit('leave_success', {'message': f'Left game {game_id}'}, room=f'game_{game_id}')
 
+# New API endpoints for mobile app
 @app.route('/api/games')
 def api_games():
     games = Game.query.filter_by(is_complete=False).order_by(Game.start_time).all()
@@ -233,12 +218,3 @@ def api_submit_answers(game_id):
         return jsonify({'message': 'Congratulations! You won the game!', 'score': score, 'game_complete': True})
     
     return jsonify({'message': 'Answers submitted successfully', 'score': score, 'game_complete': False})
-
-# New route to check if admin user exists
-@app.route('/check-admin')
-def check_admin():
-    admin = Admin.query.first()
-    if admin:
-        return jsonify({'admin_exists': True, 'username': admin.username})
-    else:
-        return jsonify({'admin_exists': False})
