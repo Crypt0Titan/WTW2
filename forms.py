@@ -18,7 +18,7 @@ class CreateGameForm(FlaskForm):
     ])
     entry_value = FloatField('Entry Value', validators=[
         DataRequired(message="Entry value is required."),
-        NumberRange(min=0.01, message="Entry value must be at least 0.01.")
+        NumberRange(min=0, message="Entry value must be at least 0.")
     ])
     start_time = DateTimeField('Start Time', validators=[DataRequired(message="Start time is required.")])
     

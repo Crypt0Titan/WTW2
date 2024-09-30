@@ -28,8 +28,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (fieldName === 'entry_value') {
             if (!value) {
                 errorMessage = 'Entry value is required.';
-            } else if (isNaN(value) || value < 0.01) {
-                errorMessage = 'Entry value must be at least 0.01.';
+            } else if (isNaN(value) || value < 0) {
+                errorMessage = 'Entry value must be at least 0.';
             }
         } else if (fieldName === 'start_time') {
             if (!value) {
