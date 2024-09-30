@@ -1,7 +1,7 @@
 import os
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_socketio import emit, join_room, leave_room
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from models import Admin, Game, Question, Player
@@ -14,6 +14,11 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if not session.get('admin_logged_in'):
             flash('Please log in as admin to access this page.', 'error')
+            return redirect(url_for('admin_login'))
+        if 'admin_expiration' in session and session['admin_expiration'] < datetime.utcnow():
+            session.pop('admin_logged_in', None)
+            session.pop('admin_expiration', None)
+            flash('Your session has expired. Please log in again.', 'error')
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated_function
@@ -31,11 +36,20 @@ def admin_login():
         admin = Admin.query.filter_by(username=username).first()
         if admin and check_password_hash(admin.password_hash, password):
             session['admin_logged_in'] = True
+            session['admin_expiration'] = datetime.utcnow() + timedelta(minutes=30)
             flash('Logged in successfully.', 'success')
             return redirect(url_for('admin_dashboard'))
         else:
             flash('Invalid username or password.', 'error')
     return render_template('admin/login.html')
+
+@app.route('/admin/logout')
+@admin_required
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    session.pop('admin_expiration', None)
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('index'))
 
 @app.route('/admin/dashboard')
 @admin_required
