@@ -22,19 +22,18 @@
     </select>
 </div>
 
-<div id="games-list">
+<div id="games-list" class="games-grid">
     {% for game in games %}
-    <div class="bg-white p-4 rounded-lg shadow-md mb-4" data-game-id="{{ game.id }}">
+    <div class="bg-white p-4 rounded-lg shadow-md game-item" data-game-id="{{ game.id }}">
         <h3 class="text-xl font-semibold mb-2">Game #{{ game.id }}</h3>
-        <p class="mb-1">Pot Size: $<span class="pot-size">{{ "%.2f"|format(game.pot_size) }}</span></p>
-        <p class="mb-1">Entry Value: ${{ "%.2f"|format(game.entry_value) }}</p>
-        <p class="mb-1">Players: <span class="player-count">{{ game.players|length }}</span> / {{ game.max_players }}</p>
-        <p class="mb-1">Start Time: <span class="start-time">{{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span></p>
+        <p class="mb-1"><i class="fas fa-trophy mr-2"></i>Pot Size: $<span class="pot-size">{{ "%.2f"|format(game.pot_size) }}</span></p>
+        <p class="mb-1"><i class="fas fa-coins mr-2"></i>Entry Value: ${{ "%.2f"|format(game.entry_value) }}</p>
+        <p class="mb-1"><i class="fas fa-users mr-2"></i>Players: <span class="player-count">{{ game.players|length }}</span> / {{ game.max_players }}</p>
+        <p class="mb-1"><i class="far fa-clock mr-2"></i>Start Time: <span class="start-time">{{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span></p>
         <a href="{{ url_for('join_game', game_id=game.id) }}" class="btn btn-blue mt-2">Join Game</a>
     </div>
     {% endfor %}
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
@@ -62,14 +61,14 @@ document.getElementById('sort-select').addEventListener('change', function() {
 socket.on('new_game', function(data) {
     const gamesList = document.getElementById('games-list');
     const newGame = document.createElement('div');
-    newGame.className = 'bg-white p-4 rounded-lg shadow-md mb-4';
+    newGame.className = 'bg-white p-4 rounded-lg shadow-md game-item';
     newGame.setAttribute('data-game-id', data.game_id);
     newGame.innerHTML = `
         <h3 class="text-xl font-semibold mb-2">Game #${data.game_id}</h3>
-        <p class="mb-1">Pot Size: $<span class="pot-size">${data.pot_size.toFixed(2)}</span></p>
-        <p class="mb-1">Entry Value: $0.00</p>
-        <p class="mb-1">Players: <span class="player-count">0</span> / 0</p>
-        <p class="mb-1">Start Time: <span class="start-time">${new Date(data.start_time).toLocaleString()}</span></p>
+        <p class="mb-1"><i class="fas fa-trophy mr-2"></i>Pot Size: $<span class="pot-size">${data.pot_size.toFixed(2)}</span></p>
+        <p class="mb-1"><i class="fas fa-coins mr-2"></i>Entry Value: $0.00</p>
+        <p class="mb-1"><i class="fas fa-users mr-2"></i>Players: <span class="player-count">0</span> / 0</p>
+        <p class="mb-1"><i class="far fa-clock mr-2"></i>Start Time: <span class="start-time">${new Date(data.start_time).toLocaleString()}</span></p>
         <a href="/game/${data.game_id}/join" class="btn btn-blue mt-2">Join Game</a>
     `;
     gamesList.insertBefore(newGame, gamesList.firstChild);
