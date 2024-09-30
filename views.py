@@ -79,7 +79,9 @@ def create_game():
                 flash('An error occurred while creating the game. Please try again.', 'error')
         else:
             app.logger.error(f"Form validation failed. Errors: {form.errors}")
-            flash('Please correct the errors in the form.', 'error')
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f"{field}: {error}", 'error')
     return render_template('admin/create_game.html', form=form)
 
 @app.route('/game/<int:game_id>/join', methods=['GET', 'POST'])
