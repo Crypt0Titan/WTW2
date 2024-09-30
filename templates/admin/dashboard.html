@@ -32,7 +32,7 @@
                 <td class="py-3 px-6 text-left">
                     {% if game.is_complete %}
                     <span class="bg-gray-200 text-gray-700 py-1 px-3 rounded-full text-xs">Completed</span>
-                    {% elif game.start_time %}
+                    {% elif game.start_time and not game.is_complete %}
                     <span class="bg-green-200 text-green-700 py-1 px-3 rounded-full text-xs">In Progress</span>
                     {% else %}
                     <span class="bg-yellow-200 text-yellow-700 py-1 px-3 rounded-full text-xs">Not Started</span>
