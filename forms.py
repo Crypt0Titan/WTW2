@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, FloatField, DateTimeField, SubmitField
+from wtforms import StringField, IntegerField, FloatField, DateTimeField
 from wtforms.validators import DataRequired, NumberRange, Length, ValidationError
 from datetime import datetime
 
@@ -29,8 +29,6 @@ class CreateGameForm(FlaskForm):
     for i in range(12):
         vars()[f'phrase_{i}'] = StringField(f'Phrase {i+1}', validators=[Length(max=255)])
         vars()[f'answer_{i}'] = StringField(f'Answer {i+1}', validators=[Length(max=255)])
-    
-    submit = SubmitField('Create Game')
 
     def validate(self):
         if not super().validate():
@@ -50,4 +48,3 @@ class JoinGameForm(FlaskForm):
         DataRequired(message="Ethereum address is required."),
         Length(min=42, max=42, message="Ethereum address must be exactly 42 characters long.")
     ])
-    submit = SubmitField('Join Game')
