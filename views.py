@@ -1,17 +1,27 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify, session
-from app import app, db, socketio
+import os
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, session
+from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 from models import Admin, Game, Question, Player
 from forms import CreateGameForm, JoinGameForm
 from utils import check_answers, determine_winner
-from werkzeug.security import check_password_hash
-from functools import wraps
-from datetime import datetime, timedelta
-from flask_socketio import emit, join_room, leave_room
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.urandom(24)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+
+socketio = SocketIO(app)
+db = SQLAlchemy(app)
 
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'admin_id' not in session:
+        if not session.get('admin_logged_in'):
+            flash('Please log in as admin to access this page.', 'error')
             return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated_function
@@ -28,9 +38,11 @@ def admin_login():
         password = request.form['password']
         admin = Admin.query.filter_by(username=username).first()
         if admin and check_password_hash(admin.password_hash, password):
-            session['admin_id'] = admin.id
+            session['admin_logged_in'] = True
+            flash('Logged in successfully.', 'success')
             return redirect(url_for('admin_dashboard'))
-        flash('Invalid username or password')
+        else:
+            flash('Invalid username or password.', 'error')
     return render_template('admin/login.html')
 
 @app.route('/admin/dashboard')
@@ -44,6 +56,7 @@ def admin_dashboard():
 def create_game():
     form = CreateGameForm()
     if form.validate_on_submit():
+        app.logger.info("Form validated successfully")
         game = Game(
             time_limit=form.time_limit.data,
             max_players=form.max_players.data,
@@ -63,8 +76,10 @@ def create_game():
         
         db.session.commit()
         socketio.emit('new_game', {'game_id': game.id, 'pot_size': game.pot_size, 'start_time': game.start_time.isoformat()}, namespace='/game')
-        flash('Game created successfully')
+        flash('Game created successfully', 'success')
         return redirect(url_for('admin_dashboard'))
+    else:
+        app.logger.error(f"Form validation failed. Errors: {form.errors}")
     return render_template('admin/create_game.html', form=form)
 
 @app.route('/game/<int:game_id>/join', methods=['GET', 'POST'])
@@ -159,7 +174,6 @@ def handle_leave(data):
     leave_room(f'game_{game_id}')
     emit('leave_success', {'message': f'Left game {game_id}'}, room=f'game_{game_id}')
 
-# New API endpoints for mobile app
 @app.route('/api/games')
 def api_games():
     games = Game.query.filter_by(is_complete=False).order_by(Game.start_time).all()
