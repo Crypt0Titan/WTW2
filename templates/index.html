@@ -24,12 +24,12 @@
 
 <div id="games-list">
     {% for game in games %}
-    <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+    <div class="bg-white p-4 rounded-lg shadow-md mb-4" data-game-id="{{ game.id }}">
         <h3 class="text-xl font-semibold mb-2">Game #{{ game.id }}</h3>
-        <p class="mb-1">Pot Size: ${{ "%.2f"|format(game.pot_size) }}</p>
+        <p class="mb-1">Pot Size: $<span class="pot-size">{{ "%.2f"|format(game.pot_size) }}</span></p>
         <p class="mb-1">Entry Value: ${{ "%.2f"|format(game.entry_value) }}</p>
-        <p class="mb-1">Players: {{ game.players|length }} / {{ game.max_players }}</p>
-        <p class="mb-1">Start Time: {{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        <p class="mb-1">Players: <span class="player-count">{{ game.players|length }}</span> / {{ game.max_players }}</p>
+        <p class="mb-1">Start Time: <span class="start-time">{{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span></p>
         <a href="{{ url_for('join_game', game_id=game.id) }}" class="btn btn-blue mt-2">Join Game</a>
     </div>
     {% endfor %}
@@ -46,17 +46,48 @@ document.getElementById('sort-select').addEventListener('change', function() {
 
     games.sort((a, b) => {
         if (sortBy === 'pot-size') {
-            const potA = parseFloat(a.querySelector('p:nth-child(2)').textContent.split('$')[1]);
-            const potB = parseFloat(b.querySelector('p:nth-child(2)').textContent.split('$')[1]);
+            const potA = parseFloat(a.querySelector('.pot-size').textContent);
+            const potB = parseFloat(b.querySelector('.pot-size').textContent);
             return potB - potA;
         } else {
-            const timeA = new Date(a.querySelector('p:nth-child(5)').textContent.split(': ')[1]);
-            const timeB = new Date(b.querySelector('p:nth-child(5)').textContent.split(': ')[1]);
+            const timeA = new Date(a.querySelector('.start-time').textContent);
+            const timeB = new Date(b.querySelector('.start-time').textContent);
             return timeA - timeB;
         }
     });
 
     games.forEach(game => gamesList.appendChild(game));
+});
+
+socket.on('new_game', function(data) {
+    const gamesList = document.getElementById('games-list');
+    const newGame = document.createElement('div');
+    newGame.className = 'bg-white p-4 rounded-lg shadow-md mb-4';
+    newGame.setAttribute('data-game-id', data.game_id);
+    newGame.innerHTML = `
+        <h3 class="text-xl font-semibold mb-2">Game #${data.game_id}</h3>
+        <p class="mb-1">Pot Size: $<span class="pot-size">${data.pot_size.toFixed(2)}</span></p>
+        <p class="mb-1">Entry Value: $0.00</p>
+        <p class="mb-1">Players: <span class="player-count">0</span> / 0</p>
+        <p class="mb-1">Start Time: <span class="start-time">${new Date(data.start_time).toLocaleString()}</span></p>
+        <a href="/game/${data.game_id}/join" class="btn btn-blue mt-2">Join Game</a>
+    `;
+    gamesList.insertBefore(newGame, gamesList.firstChild);
+});
+
+socket.on('player_joined', function(data) {
+    const game = document.querySelector(`[data-game-id="${data.game_id}"]`);
+    if (game) {
+        const playerCount = game.querySelector('.player-count');
+        playerCount.textContent = data.player_count;
+    }
+});
+
+socket.on('game_started', function(data) {
+    const game = document.querySelector(`[data-game-id="${data.game_id}"]`);
+    if (game) {
+        game.remove();
+    }
 });
 </script>
 {% endblock %}

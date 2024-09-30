@@ -1,11 +1,12 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
-from app import app, db
+from flask import render_template, request, redirect, url_for, flash, jsonify, session
+from app import app, db, socketio
 from models import Admin, Game, Question, Player
 from forms import CreateGameForm, JoinGameForm
 from utils import check_answers, determine_winner
 from werkzeug.security import check_password_hash
 from functools import wraps
 from datetime import datetime, timedelta
+from flask_socketio import emit, join_room, leave_room
 
 def admin_required(f):
     @wraps(f)
@@ -61,6 +62,7 @@ def create_game():
                 db.session.add(question)
         
         db.session.commit()
+        socketio.emit('new_game', {'game_id': game.id, 'pot_size': game.pot_size, 'start_time': game.start_time.isoformat()}, namespace='/game')
         flash('Game created successfully')
         return redirect(url_for('admin_dashboard'))
     return render_template('admin/create_game.html', form=form)
@@ -73,6 +75,7 @@ def join_game(game_id):
         player = Player(game_id=game.id, ethereum_address=form.ethereum_address.data)
         db.session.add(player)
         db.session.commit()
+        socketio.emit('player_joined', {'game_id': game.id, 'player_count': len(game.players)}, namespace='/game')
         return redirect(url_for('game_lobby', game_id=game.id))
     return render_template('game/join.html', game=game, form=form)
 
@@ -103,9 +106,12 @@ def submit_answers(game_id):
     player.score = score
     db.session.commit()
 
+    socketio.emit('player_score_update', {'game_id': game.id, 'player_id': player.id, 'score': score}, namespace='/game')
+
     if score == len(questions):
         game.is_complete = True
         db.session.commit()
+        socketio.emit('game_complete', {'game_id': game.id, 'winner_id': player.id}, namespace='/game')
         return jsonify({'message': 'Congratulations! You won the game!', 'score': score})
     
     return jsonify({'message': 'Answers submitted successfully', 'score': score})
@@ -123,6 +129,7 @@ def start_game(game_id):
     game = Game.query.get_or_404(game_id)
     game.start_time = datetime.utcnow()
     db.session.commit()
+    socketio.emit('game_started', {'game_id': game.id}, namespace='/game')
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/game_stats/<int:game_id>')
@@ -131,3 +138,23 @@ def game_stats(game_id):
     game = Game.query.get_or_404(game_id)
     players = Player.query.filter_by(game_id=game.id).order_by(Player.score.desc()).all()
     return render_template('admin/game_stats.html', game=game, players=players)
+
+@socketio.on('connect', namespace='/game')
+def handle_connect():
+    print('Client connected')
+
+@socketio.on('disconnect', namespace='/game')
+def handle_disconnect():
+    print('Client disconnected')
+
+@socketio.on('join', namespace='/game')
+def handle_join(data):
+    game_id = data['game_id']
+    join_room(f'game_{game_id}')
+    emit('join_success', {'message': f'Joined game {game_id}'}, room=f'game_{game_id}')
+
+@socketio.on('leave', namespace='/game')
+def handle_leave(data):
+    game_id = data['game_id']
+    leave_room(f'game_{game_id}')
+    emit('leave_success', {'message': f'Left game {game_id}'}, room=f'game_{game_id}')

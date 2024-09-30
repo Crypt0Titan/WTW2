@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Win The Wallet{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-100">
@@ -39,5 +40,11 @@
     </footer>
 
     {% block extra_js %}{% endblock %}
+    <script>
+        const socket = io('/game');
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+    </script>
 </body>
 </html>

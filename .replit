@@ -13,14 +13,14 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Start Flask Server"
+args = "Flask Server"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Flask Server"
+args = "Start SocketIO Server"
 
 [[workflows.workflow]]
-name = "Start Flask Server"
+name = "Flask Server"
 author = "agent"
 
 [workflows.workflow.metadata]
@@ -32,7 +32,7 @@ args = "python main.py"
 waitForPort = 5000
 
 [[workflows.workflow]]
-name = "Flask Server"
+name = "Start SocketIO Server"
 author = "agent"
 
 [workflows.workflow.metadata]
