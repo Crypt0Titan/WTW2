@@ -4,8 +4,8 @@
 <h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
 <div class="flex justify-between items-center mb-6">
-    <a href="{{ url_for('create_game') }}" class="btn btn-blue">Create New Game</a>
-    <a href="{{ url_for('admin_logout') }}" class="btn bg-red-500 hover:bg-red-700 text-white">Logout</a>
+    <a href="{{ url_for('admin.create_game') }}" class="btn btn-blue">Create New Game</a>
+    <a href="{{ url_for('admin.admin_logout') }}" class="btn bg-red-500 hover:bg-red-700 text-white">Logout</a>
 </div>
 
 <h2 class="text-2xl font-bold mb-4">Games</h2>
@@ -42,7 +42,7 @@
                     {% if not game.is_complete and (not game.start_time or game.start_time > now) %}
                         <button class="start-game-btn bg-blue-500 hover:bg-blue-700 text-white py-1 px-3 rounded text-xs mr-2" data-game-id="{{ game.id }}">Start Game</button>
                     {% endif %}
-                    <a href="{{ url_for('game_stats', game_id=game.id) }}" class="bg-green-500 hover:bg-green-700 text-white py-1 px-3 rounded text-xs">View Stats</a>
+                    <a href="{{ url_for('admin.game_stats', game_id=game.id) }}" class="bg-green-500 hover:bg-green-700 text-white py-1 px-3 rounded text-xs">View Stats</a>
                 </td>
             </tr>
             {% endfor %}
