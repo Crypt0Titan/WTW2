@@ -6,7 +6,11 @@ from flask_socketio import SocketIO
 app = Flask(__name__)
 
 # Use the DATABASE_URL environment variable directly
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+database_url = os.environ.get("DATABASE_URL")
+if database_url is None:
+    raise ValueError("DATABASE_URL environment variable is not set")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SECRET_KEY"] = os.urandom(24)
 
 db = SQLAlchemy(app)
