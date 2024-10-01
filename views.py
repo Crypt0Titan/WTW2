@@ -51,6 +51,12 @@ def game_lobby(game_id):
     game = Game.query.get_or_404(game_id)
     return render_template('game/lobby.html', game=game)
 
+@app.route('/game/<int:game_id>/play')
+def play_game(game_id):
+    game = Game.query.get_or_404(game_id)
+    questions = Question.query.filter_by(game_id=game.id).all()
+    return render_template('game/play.html', game=game, questions=questions)
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
