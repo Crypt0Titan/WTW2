@@ -11,7 +11,7 @@
             <form id="answer-form" action="{{ url_for('main.submit_answers', game_id=game.id) }}" method="POST">
                 {% for question in questions %}
                 <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="question-{{ question.id }}">
+                    <label class="block text-gray-300 text-sm font-bold mb-2" for="question-{{ question.id }}">
                         {{ question.phrase }}
                     </label>
                     <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
