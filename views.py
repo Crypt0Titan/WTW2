@@ -1,179 +1,187 @@
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from models import Game, Player, Question, Admin
 from forms import CreateGameForm, JoinGameForm
-from app import db, socketio
-from utils import check_answers
+from extensions import db, socketio
 from werkzeug.security import check_password_hash
-from functools import wraps
 from datetime import datetime
 from sqlalchemy.orm import joinedload
-import logging
-from routes import main, admin
+import pytz
 
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'admin_id' not in session:
-            flash('Please log in to access this page.', 'error')
-            return redirect(url_for('admin.admin_login'))
-        return f(*args, **kwargs)
-    return decorated_function
+def update_game_statuses():
+    current_time = datetime.utcnow()
+    games = Game.query.filter_by(is_complete=False).all()
 
-@main.route('/')
-def index():
-    games = Game.query.filter_by(is_complete=False).options(joinedload(Game.players)).order_by(Game.start_time).all()
-    return render_template('index.html', games=games, len=len, now=datetime.utcnow())
+    for game in games:
+        if game.start_time:
+            elapsed_time = current_time - game.start_time
 
-@main.route('/game/<int:game_id>/join', methods=['GET', 'POST'])
-def join_game(game_id):
-    game = Game.query.get_or_404(game_id)
-    form = JoinGameForm()
+            if elapsed_time.total_seconds() >= game.time_limit:
+                game.is_complete = True
+                db.session.commit()
 
-    if form.validate_on_submit():
-        ethereum_address = form.ethereum_address.data
-        existing_player = Player.query.filter_by(game_id=game.id, ethereum_address=ethereum_address).first()
-        
-        if existing_player:
-            flash('You have already joined this game.', 'info')
-        elif len(game.players) >= game.max_players:
-            flash('This game is already full.', 'error')
-        else:
-            new_player = Player(game_id=game.id, ethereum_address=ethereum_address)
-            db.session.add(new_player)
-            db.session.commit()
-            logging.info(f"New player joined game {game_id}. Total players: {len(game.players)}")
-            flash('You have successfully joined the game!', 'success')
-            socketio.emit('player_joined', {'game_id': game.id, 'player_count': len(game.players), 'ethereum_address': ethereum_address}, namespace='/game')
-        
-        return redirect(url_for('main.game_lobby', game_id=game.id))
+def main_routes(main):
+    @main.route('/')
+    def index():
+        update_game_statuses()
+        games = Game.query.filter_by(is_complete=False).options(joinedload(Game.players)).order_by(Game.start_time).all()
+        return render_template('index.html', games=games, len=len, now=datetime.utcnow())
 
-    return render_template('game/join.html', game=game, form=form)
+    @main.route('/game/<int:game_id>/join', methods=['GET', 'POST'])
+    def join_game(game_id):
+        game = Game.query.get_or_404(game_id)
+        form = JoinGameForm()
 
-@main.route('/game/<int:game_id>/lobby')
-def game_lobby(game_id):
-    try:
-        logging.info(f"Accessing game lobby for game_id: {game_id}")
+        if form.validate_on_submit():
+            ethereum_address = form.ethereum_address.data
+            existing_player = Player.query.filter_by(game_id=game.id, ethereum_address=ethereum_address).first()
+
+            if existing_player:
+                flash('You have already joined this game.', 'info')
+            elif len(game.players) >= game.max_players:
+                flash('This game is already full.', 'error')
+            else:
+                new_player = Player(game_id=game.id, ethereum_address=ethereum_address)
+                db.session.add(new_player)
+                db.session.commit()
+                flash('You have successfully joined the game!', 'success')
+                return redirect(url_for('main.game_lobby', game_id=game.id))
+
+        return render_template('game/join.html', game=game, form=form)
+
+    @main.route('/game/<int:game_id>/lobby')
+    def game_lobby(game_id):
         game = Game.query.get_or_404(game_id)
         players = Player.query.filter_by(game_id=game_id).all()
-        logging.info(f"Game {game_id} found. Number of players: {len(players)}")
         return render_template('game/lobby.html', game=game, players=players)
-    except Exception as e:
-        logging.error(f"Error in game_lobby for game_id {game_id}: {str(e)}")
-        flash('An error occurred while loading the game lobby.', 'error')
-        return redirect(url_for('main.index'))
 
-@main.route('/game/<int:game_id>/play')
-def play_game(game_id):
-    game = Game.query.get_or_404(game_id)
-    questions = Question.query.filter_by(game_id=game.id).all()
-    return render_template('game/play.html', game=game, questions=questions)
+    @main.route('/game/<int:game_id>/play', endpoint='play_game')
+    def play_game(game_id):
+        game = Game.query.get_or_404(game_id)
+        update_game_statuses()
+        if game.start_time and game.start_time <= datetime.utcnow() and not game.is_complete:
+            questions = Question.query.filter_by(game_id=game.id).all()
+            player_address = request.args.get('address', '')
+            return render_template('game/play.html', game=game, questions=questions, player_address=player_address)
+        else:
+            flash('The game has not started yet or has already been completed.', 'warning')
+            return redirect(url_for('main.game_lobby', game_id=game_id))
 
-@admin.route('/login', methods=['GET', 'POST'])
-def admin_login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        admin_user = Admin.query.filter_by(username=username).first()
-        if admin_user and check_password_hash(admin_user.password_hash, password):
-            session['admin_id'] = admin_user.id
-            flash('Logged in successfully.', 'success')
-            return redirect(url_for('admin.dashboard'))
-        flash('Invalid username or password.', 'error')
-    return render_template('admin/login.html')
-
-@admin.route('/logout')
-def admin_logout():
-    session.pop('admin_id', None)
-    flash('Logged out successfully.', 'success')
-    return redirect(url_for('main.index'))
-
-@admin.route('/dashboard')
-@admin_required
-def dashboard():
-    try:
-        games = Game.query.options(joinedload(Game.players)).order_by(Game.created_at.desc()).all()
-        for game in games:
-            try:
-                stats_url = url_for('admin.game_stats', game_id=game.id)
-                logging.info(f"Generated URL for game {game.id}: {stats_url}")
-            except Exception as e:
-                logging.error(f"Error generating URL for game {game.id}: {str(e)}")
-        return render_template('admin/dashboard.html', games=games, now=datetime.utcnow())
-    except Exception as e:
-        logging.error(f"Error in admin_dashboard: {str(e)}")
-        flash('An error occurred while loading the dashboard.', 'error')
-        return redirect(url_for('main.index'))
-
-@admin.route('/create_game', methods=['GET', 'POST'])
-@admin_required
-def create_game():
-    form = CreateGameForm()
-    if form.validate_on_submit():
-        game = Game(
-            time_limit=form.time_limit.data,
-            max_players=form.max_players.data,
-            pot_size=form.pot_size.data,
-            entry_value=form.entry_value.data,
-            start_time=form.start_time.data
-        )
-        db.session.add(game)
-        db.session.commit()
-
-        for i in range(12):
-            phrase = getattr(form, f'phrase_{i}').data
-            answer = getattr(form, f'answer_{i}').data
-            if phrase and answer:
-                question = Question(game_id=game.id, phrase=phrase, answer=answer)
-                db.session.add(question)
-        
-        db.session.commit()
-        flash('New game created successfully!', 'success')
-        return redirect(url_for('admin.dashboard'))
-    
-    return render_template('admin/create_game.html', form=form)
-
-@main.route('/game/<int:game_id>/submit', methods=['POST'])
-def submit_answers(game_id):
-    logging.info(f"Received submission for game {game_id}")
-    logging.info(f"Form data: {request.form}")
-    
-    game = Game.query.get_or_404(game_id)
-    player = Player.query.filter_by(game_id=game.id, ethereum_address=request.form['ethereum_address']).first()
-    
-    if not player:
-        logging.error(f"Player not found for game {game_id} and ethereum_address {request.form['ethereum_address']}")
-        return jsonify({'error': 'Player not found'}), 404
-
-    answers = request.form.getlist('answers[]')
-    questions = Question.query.filter_by(game_id=game.id).all()
-    
-    logging.info(f"Number of questions: {len(questions)}, Number of answers: {len(answers)}")
-    
-    score = check_answers(questions, answers)
-    player.score = score
-    db.session.commit()
-
-    logging.info(f"Player {player.id} submitted answers for game {game_id}. Score: {score}")
-
-    socketio.emit('player_score_update', {'game_id': game.id, 'player_id': player.id, 'score': score}, namespace='/game')
-
-    if score == len(questions):
-        game.is_complete = True
-        db.session.commit()
-        socketio.emit('game_complete', {'game_id': game.id, 'winner_id': player.id}, namespace='/game')
-        return jsonify({'message': 'Congratulations! You won the game!', 'score': score, 'game_complete': True})
-    
-    return jsonify({'message': 'Answers submitted successfully', 'score': score, 'game_complete': False})
-
-@admin.route('/game_stats/<int:game_id>')
-@admin_required
-def game_stats(game_id):
-    try:
-        logging.info(f"Accessing game stats for game_id: {game_id}")
+    @main.route('/game/<int:game_id>/result')
+    def game_result(game_id):
         game = Game.query.get_or_404(game_id)
         players = Player.query.filter_by(game_id=game_id).order_by(Player.score.desc()).all()
-        return render_template('admin/game_stats.html', game=game, players=players)
-    except Exception as e:
-        logging.error(f"Error in game_stats for game_id {game_id}: {str(e)}")
-        flash('An error occurred while loading the game stats.', 'error')
+        return render_template('game/result.html', game=game, players=players)
+
+    @main.route('/game/<int:game_id>/submit', methods=['POST'])
+    def submit_answers(game_id):
+        game = Game.query.get_or_404(game_id)
+        answers = request.form.getlist('answers[]')
+        ethereum_address = request.form.get('ethereum_address')
+
+        score = 0
+        questions = Question.query.filter_by(game_id=game.id).all()
+
+        for question, answer in zip(questions, answers):
+            if answer.strip().lower() == question.answer.strip().lower():
+                score += 1
+
+        player = Player.query.filter_by(ethereum_address=ethereum_address, game_id=game.id).first()
+        if player:
+            player.score = score
+        else:
+            player = Player(ethereum_address=ethereum_address, game_id=game.id, score=score)
+            db.session.add(player)
+
+        db.session.commit()
+
+        socketio.emit('player_score_update', {
+            'game_id': game.id,
+            'player_address': ethereum_address,
+            'score': score
+        }, namespace='/game')
+
+        if game.start_time:
+            elapsed_time = datetime.utcnow() - game.start_time
+            if elapsed_time.total_seconds() >= game.time_limit:
+                game.is_complete = True
+                db.session.commit()
+
+        return jsonify({
+            'message': 'Answers submitted successfully!',
+            'score': score,
+            'game_complete': game.is_complete
+        })
+
+def admin_routes(admin):
+    @admin.route('/dashboard')
+    def dashboard():
+        update_game_statuses()
+        games = Game.query.order_by(Game.created_at.desc()).all()
+        current_time = datetime.utcnow()
+        return render_template('admin/dashboard.html', games=games, now=current_time)
+
+    @admin.route('/start_game/<int:game_id>', methods=['POST'])
+    def start_game(game_id):
+        game = Game.query.get_or_404(game_id)
+        if game.start_time and game.start_time <= datetime.utcnow():
+            flash('Game has already started or is in progress!', 'error')
+        else:
+            game.start_time = datetime.utcnow()
+            db.session.commit()
+            flash(f'Game {game_id} has started!', 'success')
+
+            socketio.emit('game_started', {'game_id': game.id}, namespace='/game')
+
         return redirect(url_for('admin.dashboard'))
+
+    @admin.route('/login', methods=['GET', 'POST'])
+    def admin_login():
+        if request.method == 'POST':
+            username = request.form['username']
+            password = request.form['password']
+            admin_user = Admin.query.filter_by(username=username).first()
+            if admin_user and check_password_hash(admin_user.password_hash, password):
+                session['admin_id'] = admin_user.id
+                flash('Logged in successfully.', 'success')
+                return redirect(url_for('admin.dashboard'))
+            flash('Invalid username or password.', 'error')
+        return render_template('admin/login.html')
+
+    @admin.route('/logout')
+    def admin_logout():
+        session.pop('admin_id', None)
+        flash('Logged out successfully.', 'success')
+        return redirect(url_for('main.index'))
+
+    @admin.route('/create_game', methods=['GET', 'POST'])
+    def create_game():
+        form = CreateGameForm()
+        if form.validate_on_submit():
+            game = Game(
+                time_limit=form.time_limit.data,
+                max_players=form.max_players.data,
+                pot_size=form.pot_size.data,
+                entry_value=form.entry_value.data,
+                start_time=form.start_time.data
+            )
+            db.session.add(game)
+            db.session.commit()
+
+            for i in range(12):
+                phrase = getattr(form, f'phrase_{i}').data
+                answer = getattr(form, f'answer_{i}').data
+                if phrase and answer:
+                    question = Question(game_id=game.id, phrase=phrase, answer=answer)
+                    db.session.add(question)
+
+            db.session.commit()
+            flash('New game created successfully!', 'success')
+            return redirect(url_for('admin.dashboard'))
+        return render_template('admin/create_game.html', form=form)
+
+    @admin.route('/game_stats/<int:game_id>')
+    def game_stats(game_id):
+        game = Game.query.get_or_404(game_id)
+        players = Player.query.filter_by(game_id=game_id).order_by(Player.score.desc()).all()
+        current_time = datetime.utcnow()
+        return render_template('admin/game_stats.html', game=game, players=players, now=current_time)

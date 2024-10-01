@@ -1,34 +1,29 @@
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Admin.js loaded');
+document.addEventListener('DOMContentLoaded', function () {
     const startGameButtons = document.querySelectorAll('.start-game-btn');
-    
-    console.log('Number of start game buttons found:', startGameButtons.length);
 
     startGameButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const gameId = this.dataset.gameId;
-            console.log('Start game button clicked for game ID:', gameId);
-            fetch(`/admin/start_game/${gameId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Start game response:', data);
-                    if (data.success) {
-                        alert('Game started successfully');
-                        location.reload();
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            const gameId = this.getAttribute('data-game-id');
+
+            if (gameId) {
+                fetch(`/admin/start_game/${gameId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
                     } else {
-                        alert('Failed to start game: ' + data.message);
+                        console.error('Failed to start game.');
                     }
                 })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while starting the game');
-                });
+                .catch(error => console.error('Error:', error));
+            } else {
+                console.error('Game ID is undefined.');
+            }
         });
     });
 });

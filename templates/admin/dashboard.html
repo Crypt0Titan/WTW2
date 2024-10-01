@@ -40,7 +40,9 @@
                 </td>
                 <td class="py-3 px-6 text-left">
                     {% if not game.is_complete and (not game.start_time or game.start_time > now) %}
-                        <button class="start-game-btn bg-blue-500 hover:bg-blue-700 text-white py-1 px-3 rounded text-xs mr-2" data-game-id="{{ game.id }}">Start Game</button>
+                        <button class="start-game-btn bg-blue-500 hover:bg-blue-700 text-white py-1 px-3 rounded text-xs mr-2" data-game-id="{{ game.id }}">
+                            Start Game
+                        </button>
                     {% endif %}
                     <a href="{{ url_for('admin.game_stats', game_id=game.id) }}" class="bg-green-500 hover:bg-green-700 text-white py-1 px-3 rounded text-xs">View Stats</a>
                 </td>

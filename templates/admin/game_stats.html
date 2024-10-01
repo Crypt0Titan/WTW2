@@ -5,32 +5,41 @@
 
 <h2 class="text-2xl font-bold mb-4">Game #{{ game.id }}</h2>
 <p>Pot Size: ${{ "%.2f"|format(game.pot_size) }}</p>
-<p>Start Time: {{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+<p>Start Time: {{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') if game.start_time else 'Not Set' }}</p>
 <p>Status: 
     {% if game.is_complete %}
-        Completed
+        <span class="bg-gray-200 text-gray-700 py-1 px-3 rounded-full text-xs">Completed</span>
     {% elif not game.start_time %}
-        Not Started
+        <span class="bg-yellow-200 text-yellow-700 py-1 px-3 rounded-full text-xs">Not Started</span>
     {% else %}
-        In Progress
+        <span class="bg-green-200 text-green-700 py-1 px-3 rounded-full text-xs">In Progress</span>
     {% endif %}
 </p>
 
 <h3 class="text-xl font-bold mt-6 mb-4">Players</h3>
-<table class="w-full bg-white shadow-md rounded">
-    <thead>
-        <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-            <th class="py-3 px-6 text-left">Ethereum Address</th>
-            <th class="py-3 px-6 text-left">Score</th>
-        </tr>
-    </thead>
-    <tbody class="text-gray-600 text-sm font-light">
-        {% for player in players %}
-        <tr class="border-b border-gray-200 hover:bg-gray-100">
-            <td class="py-3 px-6 text-left">{{ player.ethereum_address }}</td>
-            <td class="py-3 px-6 text-left">{{ player.score }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="overflow-x-auto">
+    <table class="w-full bg-white shadow-md rounded">
+        <thead>
+            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                <th class="py-3 px-6 text-left">Ethereum Address</th>
+                <th class="py-3 px-6 text-left">Score</th>
+            </tr>
+        </thead>
+        <tbody class="text-gray-600 text-sm font-light">
+            {% for player in players %}
+            <tr class="border-b border-gray-200 hover:bg-gray-100">
+                <td class="py-3 px-6 text-left">{{ player.ethereum_address }}</td>
+                <td class="py-3 px-6 text-left">{{ player.score }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if not game.is_complete %}
+    <a href="{{ url_for('admin.dashboard') }}" class="mt-6 inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Back to Dashboard</a>
+{% else %}
+    <a href="{{ url_for('admin.dashboard') }}" class="mt-6 inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Back to Dashboard</a>
+{% endif %}
+
 {% endblock %}
