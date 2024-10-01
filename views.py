@@ -64,6 +64,7 @@ def main_routes(main):
                 db.session.add(new_player)
                 db.session.commit()
                 flash('You have successfully joined the game!', 'success')
+                socketio.emit('player_joined', {'game_id': game.id, 'player_count': len(game.players)}, namespace='/game')
                 return redirect(url_for('main.game_lobby', game_id=game.id))
 
         return render_template('game/join.html', game=game, form=form)
@@ -126,12 +127,18 @@ def main_routes(main):
             if elapsed_time.total_seconds() >= game.time_limit:
                 game.is_complete = True
                 db.session.commit()
+                socketio.emit('game_complete', {'game_id': game.id}, namespace='/game')
 
         return jsonify({
             'message': 'Answers submitted successfully!',
             'score': score,
             'game_complete': game.is_complete
         })
+
+    @socketio.on('join', namespace='/game')
+    def on_join(data):
+        game_id = data['game_id']
+        socketio.emit('player_joined', {'game_id': game_id}, namespace='/game')
 
 def admin_routes(admin):
     @admin.route('/dashboard')

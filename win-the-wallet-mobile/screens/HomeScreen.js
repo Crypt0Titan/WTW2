@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   gameItem: {
-    backgroundColor: '#fff',
+    backgroundColor: '#141414',
     padding: 20,
     marginBottom: 10,
     borderRadius: 5,
