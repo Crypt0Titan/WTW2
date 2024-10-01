@@ -7,6 +7,7 @@ from functools import wraps
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 from forms import JoinGameForm, CreateGameForm
+import logging
 
 def admin_required(f):
     @wraps(f)
@@ -79,8 +80,13 @@ def admin_logout():
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
-    games = Game.query.options(joinedload(Game.players)).order_by(Game.created_at.desc()).all()
-    return render_template('admin/dashboard.html', games=games, now=datetime.utcnow())
+    try:
+        games = Game.query.options(joinedload(Game.players)).order_by(Game.created_at.desc()).all()
+        return render_template('admin/dashboard.html', games=games, now=datetime.utcnow())
+    except Exception as e:
+        app.logger.error(f"Error in admin_dashboard: {str(e)}")
+        flash('An error occurred while loading the dashboard.', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/admin/create_game', methods=['GET', 'POST'])
 @admin_required
@@ -146,6 +152,11 @@ def submit_answers(game_id):
 @app.route('/admin/game_stats/<int:game_id>')
 @admin_required
 def game_stats(game_id):
-    game = Game.query.get_or_404(game_id)
-    players = Player.query.filter_by(game_id=game_id).order_by(Player.score.desc()).all()
-    return render_template('admin/game_stats.html', game=game, players=players)
+    try:
+        game = Game.query.get_or_404(game_id)
+        players = Player.query.filter_by(game_id=game_id).order_by(Player.score.desc()).all()
+        return render_template('admin/game_stats.html', game=game, players=players)
+    except Exception as e:
+        app.logger.error(f"Error in game_stats for game_id {game_id}: {str(e)}")
+        flash('An error occurred while loading the game stats.', 'error')
+        return redirect(url_for('admin_dashboard'))
