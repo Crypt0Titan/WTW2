@@ -6,7 +6,7 @@ from werkzeug.security import check_password_hash
 from functools import wraps
 from datetime import datetime
 from sqlalchemy.orm import joinedload
-from forms import JoinGameForm
+from forms import JoinGameForm, CreateGameForm
 
 def admin_required(f):
     @wraps(f)
@@ -81,6 +81,34 @@ def admin_logout():
 def admin_dashboard():
     games = Game.query.options(joinedload(Game.players)).order_by(Game.created_at.desc()).all()
     return render_template('admin/dashboard.html', games=games, now=datetime.utcnow())
+
+@app.route('/admin/create_game', methods=['GET', 'POST'])
+@admin_required
+def create_game():
+    form = CreateGameForm()
+    if form.validate_on_submit():
+        game = Game(
+            time_limit=form.time_limit.data,
+            max_players=form.max_players.data,
+            pot_size=form.pot_size.data,
+            entry_value=form.entry_value.data,
+            start_time=form.start_time.data
+        )
+        db.session.add(game)
+        db.session.commit()
+
+        for i in range(12):
+            phrase = getattr(form, f'phrase_{i}').data
+            answer = getattr(form, f'answer_{i}').data
+            if phrase and answer:
+                question = Question(game_id=game.id, phrase=phrase, answer=answer)
+                db.session.add(question)
+        
+        db.session.commit()
+        flash('New game created successfully!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    
+    return render_template('admin/create_game.html', form=form)
 
 @app.route('/game/<int:game_id>/submit', methods=['POST'])
 def submit_answers(game_id):
