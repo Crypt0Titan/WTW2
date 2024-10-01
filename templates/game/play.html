@@ -34,7 +34,7 @@
                 <ul id="leaderboard-list" class="leaderboard-list">
                     {% for player in players %}
                     <li class="leaderboard-item {% if player.ethereum_address == player_address %}highlighted{% endif %}" data-player-address="{{ player.ethereum_address }}">
-                        <span>{{ player.ethereum_address[:6] }}...{{ player.ethereum_address[-4:] }}</span>
+                        <span class="player-address">{{ player.ethereum_address[:6] }}...{{ player.ethereum_address[-4:] }}</span>
                         <span class="score">{{ player.score }}</span>
                     </li>
                     {% endfor %}
@@ -110,7 +110,7 @@ function updateLeaderboard(data) {
         }
         
         const truncatedAddress = `${data.player_address.slice(0, 6)}...${data.player_address.slice(-4)}`;
-        playerItem.innerHTML = `<span>${truncatedAddress}</span><span class="score">${data.score}</span>`;
+        playerItem.innerHTML = `<span class="player-address">${truncatedAddress}</span><span class="score">${data.score}</span>`;
         
         leaderboardList.appendChild(playerItem);
     }
