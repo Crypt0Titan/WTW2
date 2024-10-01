@@ -60,12 +60,21 @@ function submitAnswers() {
     const form = document.getElementById('answer-form');
     const formData = new FormData(form);
     
+    console.log('Submitting answers for game:', gameId);
+    console.log('Form action:', form.action);
+    
     fetch(form.action, {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('Server response:', data);
         alert(data.message);
         if (data.game_complete) {
             window.location.href = "{{ url_for('game_result', game_id=game.id) }}";
