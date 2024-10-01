@@ -3,192 +3,192 @@
 
 /* Custom styles */
 body {
-    background-color: #212121; /* Dark background for the body */
-    color: #f0f0f0; /* Light text color for contrast */
-    font-family: 'Orbitron', sans-serif; /* Futuristic font */
+    background-color: #F9F9F9;
+    color: #f0f0f0;
+    font-family: 'Orbitron', sans-serif;
 }
 
 .futuristic-container {
-    max-width: 1200px; /* Max width for the container */
-    margin: 0 auto; /* Center the container */
-    padding: 2rem; /* Padding around the container */
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
 }
 
 .neon-text {
-    color: #00ffff; /* Neon text color */
-    text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 15px #00ffff, 0 0 20px #00ffff; /* Glowing effect */
-    animation: neon-glow 1.5s ease-in-out infinite alternate; /* Animation for glow effect */
+    color: #00ffff;
+    text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 15px #00ffff, 0 0 20px #00ffff;
+    animation: neon-glow 1.5s ease-in-out infinite alternate;
 }
 
 @keyframes neon-glow {
     from {
-        text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 15px #00ffff, 0 0 20px #00ffff; /* Initial glow */
+        text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 15px #00ffff, 0 0 20px #00ffff;
     }
     to {
-        text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff, 0 0 40px #00ffff; /* Intensified glow */
+        text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff, 0 0 40px #00ffff;
     }
 }
 
 .stats-container {
-    display: flex; /* Flex container for stats */
-    flex-direction: column; /* Column layout */
-    gap: 1rem; /* Space between elements */
-    margin-bottom: 2rem; /* Bottom margin for spacing */
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 .stats-row {
-    display: grid; /* Grid layout for stats */
-    grid-template-columns: repeat(3, 1fr); /* 3 equal columns */
-    gap: 1rem; /* Space between grid items */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
 }
 
 .stat-item {
-    background-color: #141414; /* Dark background for stat items */
-    border-radius: 10px; /* Rounded corners */
-    padding: 1rem; /* Padding inside stat items */
-    text-align: center; /* Center text */
-    transition: all 0.3s ease; /* Smooth transition for hover effect */
-    border: 1px solid #00ffff; /* Neon border */
+    background-color: #141414;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 1px solid #00ffff;
 }
 
 .stat-item:hover {
-    transform: translateY(-5px); /* Lift effect on hover */
-    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3); /* Shadow effect on hover */
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
 }
 
 .stat-item i {
-    font-size: 2rem; /* Icon size */
-    color: #00ffff; /* Neon icon color */
-    margin-bottom: 0.5rem; /* Space below icons */
+    font-size: 2rem;
+    color: #00ffff;
+    margin-bottom: 0.5rem;
 }
 
 .stat-title {
-    display: block; /* Block display for title */
-    font-size: 0.9rem; /* Title font size */
-    margin-bottom: 0.5rem; /* Space below title */
-    color: #f0f0f0; /* Title text color */
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: #f0f0f0;
 }
 
 .stat-value {
-    font-size: 1.2rem; /* Value font size */
-    font-weight: bold; /* Bold text */
-    color: #00ffff; /* Value text color */
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #00ffff;
 }
 
 .info-container {
-    background-color: rgba(255, 255, 255, 0.05); /* Light transparent background */
-    border-radius: 10px; /* Rounded corners */
-    padding: 1.5rem; /* Padding inside the container */
-    margin-bottom: 2rem; /* Bottom margin for spacing */
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .contract-address {
-    background-color: rgba(255, 255, 255, 0.1); /* Slightly lighter background */
-    padding: 0.25rem 0.5rem; /* Padding for contract address */
-    border-radius: 5px; /* Rounded corners */
-    font-family: monospace; /* Monospace font for contract address */
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 5px;
+    font-family: monospace;
 }
 
 .neon-button {
-    display: inline-block; /* Inline block for button */
-    padding: 0.5rem 1rem; /* Padding for button */
-    background-color: transparent; /* Transparent background */
-    color: #00ffff; /* Neon button text color */
-    border: 2px solid #00ffff; /* Neon border */
-    border-radius: 5px; /* Rounded corners */
-    text-decoration: none; /* Remove underline */
-    transition: all 0.3s ease; /* Smooth transition */
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: transparent;
+    color: #00ffff;
+    border: 2px solid #00ffff;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: all 0.3s ease;
 }
 
 .neon-button:hover {
-    background-color: rgba(0, 255, 255, 0.2); /* Light background on hover */
-    color: #ffffff; /* Change text color on hover */
-    box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff; /* Glow effect on hover */
+    background-color: rgba(0, 255, 255, 0.2);
+    color: #ffffff;
+    box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff;
 }
 
 .futuristic-select {
-    background-color: rgba(255, 255, 255, 0.1); /* Transparent background for selects */
-    color: #f0f0f0; /* Text color */
-    border: 1px solid #00ffff; /* Neon border */
-    border-radius: 5px; /* Rounded corners */
-    padding: 0.5rem; /* Padding for selects */
-    margin-bottom: 1rem; /* Bottom margin for spacing */
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #f0f0f0;
+    border: 1px solid #00ffff;
+    border-radius: 5px;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .games-grid {
-    display: grid; /* Grid layout for games */
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive grid */
-    gap: 1.5rem; /* Space between grid items */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
 }
 
 .game-card {
-    background-color: rgba(255, 255, 255, 0.05); /* Transparent background for game cards */
-    border-radius: 10px; /* Rounded corners */
-    padding: 1.5rem; /* Padding inside game cards */
-    transition: all 0.3s ease; /* Smooth transition */
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
 }
 
 .game-card:hover {
-    transform: translateY(-5px); /* Lift effect on hover */
-    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2); /* Shadow effect on hover */
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2);
 }
 
 .game-title {
-    font-size: 1.2rem; /* Game title font size */
-    color: #00ffff; /* Neon game title color */
-    margin-bottom: 1rem; /* Space below title */
+    font-size: 1.2rem;
+    color: #00ffff;
+    margin-bottom: 1rem;
 }
 
 .game-card p {
-    margin-bottom: 0.5rem; /* Space below paragraphs */
+    margin-bottom: 0.5rem;
 }
 
 .game-card i {
-    color: #00ffff; /* Neon icon color */
-    margin-right: 0.5rem; /* Space to the right of icons */
+    color: #00ffff;
+    margin-right: 0.5rem;
 }
 
 .leaderboard {
-    background-color: rgba(255, 255, 255, 0.05); /* Transparent background for leaderboard */
-    border-radius: 10px; /* Rounded corners */
-    padding: 1.5rem; /* Padding inside leaderboard */
-    margin-top: 2rem; /* Top margin for spacing */
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 2rem;
 }
 
 .leaderboard-title {
-    font-size: 1.5rem; /* Title font size */
-    color: #00ffff; /* Neon leaderboard title color */
-    margin-bottom: 1rem; /* Space below title */
+    font-size: 1.5rem;
+    color: #00ffff;
+    margin-bottom: 1rem;
 }
 
 .leaderboard-list {
-    list-style-type: none; /* No bullets for list */
-    padding: 0; /* Remove padding */
+    list-style-type: none;
+    padding: 0;
 }
 
 .leaderboard-item {
-    display: flex; /* Flexbox for leaderboard items */
-    justify-content: space-between; /* Space between item elements */
-    align-items: center; /* Center align items */
-    padding: 0.5rem 0; /* Padding for leaderboard items */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Bottom border */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .leaderboard-item:last-child {
-    border-bottom: none; /* Remove border from last item */
+    border-bottom: none;
 }
 
 .leaderboard-item.highlighted {
-    background-color: rgba(0, 255, 255, 0.15); /* Highlighted background for selected player */
-    border-radius: 5px; /* Rounded corners */
+    background-color: rgba(0, 255, 255, 0.15);
+    border-radius: 5px;
 }
 
 @media (max-width: 768px) {
     .stats-row {
-        grid-template-columns: 1fr; /* One column on smaller screens */
+        grid-template-columns: 1fr;
     }
 
     .games-grid {
-        grid-template-columns: 1fr; /* One column on smaller screens */
+        grid-template-columns: 1fr;
     }
 }
