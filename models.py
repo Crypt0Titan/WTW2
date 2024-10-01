@@ -15,7 +15,7 @@ class Game(db.Model):
     start_time = db.Column(db.DateTime, nullable=True)
     is_complete = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    players = db.relationship('Player', backref='game')
+    players = db.relationship('Player', backref='game', lazy='dynamic')
 
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -29,3 +29,5 @@ class Player(db.Model):
     ethereum_address = db.Column(db.String(42), nullable=False)
     score = db.Column(db.Integer, default=0)
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (db.UniqueConstraint('game_id', 'ethereum_address', name='_game_ethereum_uc'),)

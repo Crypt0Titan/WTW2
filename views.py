@@ -8,6 +8,11 @@ from models import Admin, Game, Question, Player
 from forms import CreateGameForm, JoinGameForm
 from utils import check_answers, determine_winner
 from app import app, db, socketio
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 def admin_required(f):
     @wraps(f)
@@ -104,17 +109,21 @@ def create_game():
 @app.route('/game/<int:game_id>/join', methods=['GET', 'POST'])
 def join_game(game_id):
     try:
+        logger.info(f"Attempting to join game {game_id}")
         game = Game.query.get_or_404(game_id)
         form = JoinGameForm()
         if form.validate_on_submit():
             ethereum_address = form.ethereum_address.data
+            logger.info(f"Joining game {game_id} with Ethereum address: {ethereum_address}")
             existing_player = Player.query.filter_by(game_id=game.id, ethereum_address=ethereum_address).first()
             
             if existing_player:
+                logger.warning(f"Player with Ethereum address {ethereum_address} already joined game {game_id}")
                 flash('You have already joined this game.', 'warning')
                 return redirect(url_for('game_lobby', game_id=game.id))
             
             if len(game.players) >= game.max_players:
+                logger.warning(f"Game {game_id} is full. Cannot join.")
                 flash('This game is already full.', 'error')
                 return redirect(url_for('index'))
             
@@ -122,13 +131,14 @@ def join_game(game_id):
             db.session.add(player)
             db.session.commit()
             
+            logger.info(f"Player with Ethereum address {ethereum_address} successfully joined game {game_id}")
             socketio.emit('player_joined', {'game_id': game.id, 'player_count': len(game.players)}, namespace='/game')
             flash('You have successfully joined the game!', 'success')
             return redirect(url_for('game_lobby', game_id=game.id))
         
         return render_template('game/join.html', game=game, form=form)
     except Exception as e:
-        app.logger.error(f"Error in join_game: {str(e)}")
+        logger.error(f"Error in join_game: {str(e)}")
         db.session.rollback()
         flash('An error occurred while joining the game. Please try again.', 'error')
         return redirect(url_for('index'))
