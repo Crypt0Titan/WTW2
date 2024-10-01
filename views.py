@@ -82,6 +82,12 @@ def admin_logout():
 def admin_dashboard():
     try:
         games = Game.query.options(joinedload(Game.players)).order_by(Game.created_at.desc()).all()
+        for game in games:
+            try:
+                stats_url = url_for('game_stats', game_id=game.id)
+                app.logger.info(f"Generated URL for game {game.id}: {stats_url}")
+            except Exception as e:
+                app.logger.error(f"Error generating URL for game {game.id}: {str(e)}")
         return render_template('admin/dashboard.html', games=games, now=datetime.utcnow())
     except Exception as e:
         app.logger.error(f"Error in admin_dashboard: {str(e)}")
@@ -153,6 +159,7 @@ def submit_answers(game_id):
 @admin_required
 def game_stats(game_id):
     try:
+        app.logger.info(f"Accessing game stats for game_id: {game_id}")
         game = Game.query.get_or_404(game_id)
         players = Player.query.filter_by(game_id=game_id).order_by(Player.score.desc()).all()
         return render_template('admin/game_stats.html', game=game, players=players)
