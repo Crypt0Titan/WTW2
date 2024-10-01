@@ -8,6 +8,19 @@ body {
     font-family: 'Orbitron', sans-serif;
 }
 
+/* Navigation bar styles */
+nav {
+    background-color: #00ffff;
+}
+
+nav a {
+    color: #000000;
+}
+
+nav a:hover {
+    color: #ffffff;
+}
+
 .futuristic-container {
     max-width: 1200px;
     margin: 0 auto;

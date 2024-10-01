@@ -135,11 +135,6 @@ def main_routes(main):
             'game_complete': game.is_complete
         })
 
-    @socketio.on('join', namespace='/game')
-    def on_join(data):
-        game_id = data['game_id']
-        socketio.emit('player_joined', {'game_id': game_id}, namespace='/game')
-
 def admin_routes(admin):
     @admin.route('/dashboard')
     def dashboard():

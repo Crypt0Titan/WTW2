@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="futuristic-container">
-    <h1 class="neon-text">Welcome to Win The Wallet</h1>
+    <h1 class="text-5xl font-bold text-center text-cyan-400 mb-12">Welcome to Win The Wallet</h1>
 
     <div class="stats-container">
         <div class="stats-row">
@@ -42,13 +42,16 @@
     </div>
 
     <div class="info-container">
-        <h2 class="neon-text">Important Information</h2>
-        <p>To be eligible for rewards, you need to be holding $25 worth of Coin X.</p>
-        <p>Contract Address: <span class="contract-address">0x1234567890123456789012345678901234567890</span></p>
-        <a href="#" class="neon-button">Buy Coin X on Uniswap</a>
+        <h2 class="neon-text mb-4">Important Information</h2> <!-- Added margin-bottom -->
+
+        <p class="mb-4">To be eligible for rewards, you need to be holding $25 worth of Coin X.</p> <!-- Added margin-bottom -->
+
+        <p class="mb-4">Contract Address: <span class="contract-address">0x1234567890123456789012345678901234567890</span></p> <!-- Added margin-bottom -->
+
+        <a href="#" class="neon-button mt-4">Buy Coin X on Uniswap</a> <!-- Added margin-top -->
     </div>
 
-    <h2 class="neon-text">Available Games</h2>
+    <h1 class="text-5xl font-bold text-center text-cyan-400 mb-12">Available Games</h1>
 
     <div class="sort-container">
         <label for="sort-select">Sort by:</label>
@@ -57,6 +60,7 @@
             <option value="start-time">Start Time</option>
         </select>
     </div>
+
 
     <div id="games-list" class="games-grid">
         {% for game in games %}

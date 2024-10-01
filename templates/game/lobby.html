@@ -3,18 +3,18 @@
 {% block content %}
 <h1 class="text-3xl font-bold mb-6">Game Lobby</h1>
 
-<div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+<div class="bg-gray-800 text-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
     <h2 class="text-2xl font-bold mb-4">Game #{{ game.id }}</h2>
     <p class="mb-2">Pot Size: ${{ "%.2f"|format(game.pot_size) }}</p>
     <p class="mb-2">Entry Value: ${{ "%.2f"|format(game.entry_value) }}</p>
     <p class="mb-2">Players: <span id="player-count">{{ players|length }}</span> / {{ game.max_players }}</p>
     <p class="mb-2">Start Time: <span id="start-time" data-start-time="{{ game.start_time.isoformat() }}">{{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span></p>
-    <p class="mb-2">Time until start: <span id="countdown"></span></p>
+    <p class="mb-2">Time until start: <span id="countdown" class="font-bold"></span></p>
 </div>
 
 <h2 class="text-2xl font-bold mb-4">Players in Lobby</h2>
 
-<ul id="player-list" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+<ul id="player-list" class="bg-gray-800 text-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
     {% for player in players %}
     <li class="mb-2">{{ player.ethereum_address }}</li>
     {% endfor %}
@@ -42,6 +42,7 @@ function updateCountdown() {
     }
 }
 
+// Update the countdown every second
 setInterval(updateCountdown, 1000);
 updateCountdown();
 
@@ -63,7 +64,7 @@ try {
         if (data.game_id === {{ game.id }}) {
             const playerCount = document.getElementById('player-count');
             playerCount.textContent = data.player_count;
-            
+
             // Add the new player to the list
             const playerList = document.getElementById('player-list');
             const newPlayer = document.createElement('li');
