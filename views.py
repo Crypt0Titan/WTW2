@@ -61,7 +61,8 @@ def main_routes(main):
         if game.start_time and game.start_time <= datetime.utcnow() and not game.is_complete:
             questions = Question.query.filter_by(game_id=game.id).all()
             player_address = request.args.get('address', '')
-            return render_template('game/play.html', game=game, questions=questions, player_address=player_address)
+            players = Player.query.filter_by(game_id=game_id).order_by(Player.score.desc()).all()
+            return render_template('game/play.html', game=game, questions=questions, player_address=player_address, players=players)
         else:
             flash('The game has not started yet or has already been completed.', 'warning')
             return redirect(url_for('main.game_lobby', game_id=game_id))
