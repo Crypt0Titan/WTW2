@@ -142,3 +142,10 @@ def submit_answers(game_id):
         return jsonify({'message': 'Congratulations! You won the game!', 'score': score, 'game_complete': True})
     
     return jsonify({'message': 'Answers submitted successfully', 'score': score, 'game_complete': False})
+
+@app.route('/admin/game_stats/<int:game_id>')
+@admin_required
+def game_stats(game_id):
+    game = Game.query.get_or_404(game_id)
+    players = Player.query.filter_by(game_id=game_id).order_by(Player.score.desc()).all()
+    return render_template('admin/game_stats.html', game=game, players=players)
