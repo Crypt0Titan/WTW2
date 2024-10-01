@@ -50,8 +50,16 @@ def join_game(game_id):
 
 @main.route('/game/<int:game_id>/lobby')
 def game_lobby(game_id):
-    game = Game.query.get_or_404(game_id)
-    return render_template('game/lobby.html', game=game)
+    try:
+        logging.info(f"Accessing game lobby for game_id: {game_id}")
+        game = Game.query.get_or_404(game_id)
+        players = Player.query.filter_by(game_id=game_id).all()
+        logging.info(f"Game {game_id} found. Number of players: {len(players)}")
+        return render_template('game/lobby.html', game=game, players=players)
+    except Exception as e:
+        logging.error(f"Error in game_lobby for game_id {game_id}: {str(e)}")
+        flash('An error occurred while loading the game lobby.', 'error')
+        return redirect(url_for('main.index'))
 
 @main.route('/game/<int:game_id>/play')
 def play_game(game_id):

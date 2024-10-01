@@ -31,7 +31,7 @@ function updateCountdown() {
 
     if (timeLeft <= 0) {
         document.getElementById('countdown').textContent = "Game has started!";
-        window.location.href = "{{ url_for('play_game', game_id=game.id) }}";
+        window.location.href = "{{ url_for('main.play_game', game_id=game.id) }}";
     } else {
         const minutes = Math.floor(timeLeft / 60000);
         const seconds = Math.floor((timeLeft % 60000) / 1000);
@@ -44,6 +44,7 @@ function updateCountdown() {
 setInterval(updateCountdown, 1000);
 updateCountdown();
 
+const socket = io('/game');
 socket.emit('join', { game_id: {{ game.id }} });
 
 socket.on('player_joined', function(data) {
@@ -62,7 +63,7 @@ socket.on('player_joined', function(data) {
 
 socket.on('game_started', function(data) {
     if (data.game_id === {{ game.id }}) {
-        window.location.href = "{{ url_for('play_game', game_id=game.id) }}";
+        window.location.href = "{{ url_for('main.play_game', game_id=game.id) }}";
     }
 });
 </script>
