@@ -30,10 +30,16 @@ body {
 }
 
 .stats-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
     margin-bottom: 2rem;
+}
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
 }
 
 .stat-item {
@@ -176,8 +182,8 @@ body {
 }
 
 @media (max-width: 768px) {
-    .stats-container {
-        grid-template-columns: repeat(2, 1fr);
+    .stats-row {
+        grid-template-columns: 1fr;
     }
 
     .games-grid {

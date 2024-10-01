@@ -5,35 +5,39 @@
     <h1 class="neon-text">Welcome to Win The Wallet</h1>
 
     <div class="stats-container">
-        <div class="stat-item">
-            <i class="fas fa-gamepad"></i>
-            <span class="stat-title"># of Games</span>
-            <span class="stat-value">{{ statistics.total_games }}</span>
+        <div class="stats-row">
+            <div class="stat-item">
+                <i class="fas fa-gamepad"></i>
+                <span class="stat-title"># of Games</span>
+                <span class="stat-value">{{ statistics.total_games }}</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-coins"></i>
+                <span class="stat-title">Rewards Distributed</span>
+                <span class="stat-value">${{ "%.2f"|format(statistics.total_rewards) }}</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-users"></i>
+                <span class="stat-title">Total Number of Players</span>
+                <span class="stat-value">{{ statistics.total_players }}</span>
+            </div>
         </div>
-        <div class="stat-item">
-            <i class="fas fa-coins"></i>
-            <span class="stat-title">Rewards Distributed</span>
-            <span class="stat-value">${{ "%.2f"|format(statistics.total_rewards) }}</span>
-        </div>
-        <div class="stat-item">
-            <i class="fas fa-users"></i>
-            <span class="stat-title">Total Number of Players</span>
-            <span class="stat-value">{{ statistics.total_players }}</span>
-        </div>
-        <div class="stat-item">
-            <i class="fas fa-clock"></i>
-            <span class="stat-title">Time Spent In-Game</span>
-            <span class="stat-value">{{ (statistics.total_time / 3600)|round(1) }} hours</span>
-        </div>
-        <div class="stat-item">
-            <i class="fas fa-hourglass-half"></i>
-            <span class="stat-title">Avg. Time Per Game</span>
-            <span class="stat-value">{{ (statistics.avg_time_per_game / 60)|round(1) }} minutes</span>
-        </div>
-        <div class="stat-item">
-            <i class="fas fa-trophy"></i>
-            <span class="stat-title">Earnings / Winner</span>
-            <span class="stat-value">${{ "%.2f"|format(statistics.avg_earnings_per_winner) }}</span>
+        <div class="stats-row">
+            <div class="stat-item">
+                <i class="fas fa-clock"></i>
+                <span class="stat-title">Time Spent In-Game</span>
+                <span class="stat-value">{{ (statistics.total_time / 3600)|round(1) }} hours</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-hourglass-half"></i>
+                <span class="stat-title">Avg. Time Per Game</span>
+                <span class="stat-value">{{ (statistics.avg_time_per_game / 60)|round(1) }} minutes</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-trophy"></i>
+                <span class="stat-title">Earnings / Winner</span>
+                <span class="stat-value">${{ "%.2f"|format(statistics.avg_earnings_per_winner) }}</span>
+            </div>
         </div>
     </div>
 
