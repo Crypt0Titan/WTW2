@@ -12,11 +12,11 @@ app.config["SECRET_KEY"] = os.urandom(24)
 db = SQLAlchemy(app)
 socketio = SocketIO(app)
 
-# Import views after initializing db and socketio
-from views import *
-
 with app.app_context():
     db.create_all()
+
+# Import views after initializing app, db, and socketio
+from views import *
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000)
