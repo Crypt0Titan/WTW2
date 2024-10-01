@@ -1,38 +1,71 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1 class="text-3xl font-bold mb-6">Welcome to Win The Wallet</h1>
+<div class="futuristic-container">
+    <h1 class="neon-text">Welcome to Win The Wallet</h1>
 
-<div class="bg-white p-6 rounded-lg shadow-md mb-6">
-    <h2 class="text-xl font-semibold mb-4">Important Information</h2>
-    <p class="mb-2">To be eligible for rewards, you need to be holding $25 worth of Coin X.</p>
-    <p class="mb-2">Contract Address: <span class="font-mono bg-gray-100 p-1 rounded">0x1234567890123456789012345678901234567890</span></p>
-    <p class="mb-2">
-        <a href="#" class="text-blue-600 hover:underline">Buy Coin X on Uniswap</a>
-    </p>
-</div>
-
-<h2 class="text-2xl font-bold mb-4">Available Games</h2>
-
-<div class="mb-4">
-    <label for="sort-select" class="mr-2">Sort by:</label>
-    <select id="sort-select" class="border rounded p-1">
-        <option value="pot-size">Pot Size</option>
-        <option value="start-time">Start Time</option>
-    </select>
-</div>
-
-<div id="games-list" class="games-grid">
-    {% for game in games %}
-    <div class="bg-white p-4 rounded-lg shadow-md game-item" data-game-id="{{ game.id }}">
-        <h3 class="text-lg font-semibold mb-2">Game #{{ game.id }}</h3>
-        <p class="mb-1 text-sm"><i class="fas fa-trophy mr-2 text-yellow-500"></i>Pot: $<span class="pot-size">{{ "%.2f"|format(game.pot_size) }}</span></p>
-        <p class="mb-1 text-sm"><i class="fas fa-coins mr-2 text-green-500"></i>Entry: ${{ "%.2f"|format(game.entry_value) }}</p>
-        <p class="mb-1 text-sm"><i class="fas fa-users mr-2 text-blue-500"></i>Players: <span class="player-count">{{ len(game.players) }}</span> / {{ game.max_players }}</p>
-        <p class="mb-1 text-sm"><i class="far fa-clock mr-2 text-red-500"></i>Start: <span class="start-time">{{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span></p>
-        <a href="{{ url_for('main.join_game', game_id=game.id) }}" class="btn btn-blue mt-2 text-sm">Join Game</a>
+    <div class="stats-container">
+        <div class="stat-item">
+            <i class="fas fa-gamepad"></i>
+            <span class="stat-title"># of Games</span>
+            <span class="stat-value">{{ statistics.total_games }}</span>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-coins"></i>
+            <span class="stat-title">Rewards Distributed</span>
+            <span class="stat-value">${{ "%.2f"|format(statistics.total_rewards) }}</span>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-users"></i>
+            <span class="stat-title">Total Number of Players</span>
+            <span class="stat-value">{{ statistics.total_players }}</span>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-clock"></i>
+            <span class="stat-title">Time Spent In-Game</span>
+            <span class="stat-value">{{ (statistics.total_time / 3600)|round(1) }} hours</span>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-hourglass-half"></i>
+            <span class="stat-title">Avg. Time Per Game</span>
+            <span class="stat-value">{{ (statistics.avg_time_per_game / 60)|round(1) }} minutes</span>
+        </div>
+        <div class="stat-item">
+            <i class="fas fa-trophy"></i>
+            <span class="stat-title">Earnings / Winner</span>
+            <span class="stat-value">${{ "%.2f"|format(statistics.avg_earnings_per_winner) }}</span>
+        </div>
     </div>
-    {% endfor %}
+
+    <div class="info-container">
+        <h2 class="neon-text">Important Information</h2>
+        <p>To be eligible for rewards, you need to be holding $25 worth of Coin X.</p>
+        <p>Contract Address: <span class="contract-address">0x1234567890123456789012345678901234567890</span></p>
+        <a href="#" class="neon-button">Buy Coin X on Uniswap</a>
+    </div>
+
+    <h2 class="neon-text">Available Games</h2>
+
+    <div class="sort-container">
+        <label for="sort-select">Sort by:</label>
+        <select id="sort-select" class="futuristic-select">
+            <option value="pot-size">Pot Size</option>
+            <option value="start-time">Start Time</option>
+        </select>
+    </div>
+
+    <div id="games-list" class="games-grid">
+        {% for game in games %}
+        <div class="game-card" data-game-id="{{ game.id }}">
+            <h3 class="game-title">Game #{{ game.id }}</h3>
+            <p><i class="fas fa-trophy"></i> Pot: $<span class="pot-size">{{ "%.2f"|format(game.pot_size) }}</span></p>
+            <p><i class="fas fa-coins"></i> Entry: ${{ "%.2f"|format(game.entry_value) }}</p>
+            <p><i class="fas fa-users"></i> Players: <span class="player-count">{{ len(game.players) }}</span> / {{ game.max_players }}</p>
+            <p><i class="far fa-clock"></i> Start: <span class="start-time">{{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</span></p>
+            <a href="{{ url_for('main.join_game', game_id=game.id) }}" class="neon-button">Join Game</a>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}
 
@@ -61,15 +94,15 @@ document.getElementById('sort-select').addEventListener('change', function() {
 socket.on('new_game', function(data) {
     const gamesList = document.getElementById('games-list');
     const newGame = document.createElement('div');
-    newGame.className = 'bg-white p-4 rounded-lg shadow-md game-item';
+    newGame.className = 'game-card';
     newGame.setAttribute('data-game-id', data.game_id);
     newGame.innerHTML = `
-        <h3 class="text-lg font-semibold mb-2">Game #${data.game_id}</h3>
-        <p class="mb-1 text-sm"><i class="fas fa-trophy mr-2 text-yellow-500"></i>Pot: $<span class="pot-size">${data.pot_size.toFixed(2)}</span></p>
-        <p class="mb-1 text-sm"><i class="fas fa-coins mr-2 text-green-500"></i>Entry: $0.00</p>
-        <p class="mb-1 text-sm"><i class="fas fa-users mr-2 text-blue-500"></i>Players: <span class="player-count">0</span> / 0</p>
-        <p class="mb-1 text-sm"><i class="far fa-clock mr-2 text-red-500"></i>Start: <span class="start-time">${new Date(data.start_time).toLocaleString()}</span></p>
-        <a href="/game/${data.game_id}/join" class="btn btn-blue mt-2 text-sm">Join Game</a>
+        <h3 class="game-title">Game #${data.game_id}</h3>
+        <p><i class="fas fa-trophy"></i> Pot: $<span class="pot-size">${data.pot_size.toFixed(2)}</span></p>
+        <p><i class="fas fa-coins"></i> Entry: $0.00</p>
+        <p><i class="fas fa-users"></i> Players: <span class="player-count">0</span> / ${data.max_players}</p>
+        <p><i class="far fa-clock"></i> Start: <span class="start-time">${new Date(data.start_time).toLocaleString()}</span></p>
+        <a href="/game/${data.game_id}/join" class="neon-button">Join Game</a>
     `;
     gamesList.insertBefore(newGame, gamesList.firstChild);
 });

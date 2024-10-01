@@ -5,6 +5,7 @@ from extensions import db, socketio
 from werkzeug.security import check_password_hash
 from datetime import datetime
 from sqlalchemy.orm import joinedload
+from sqlalchemy import func
 import pytz
 
 def update_game_statuses():
@@ -19,12 +20,31 @@ def update_game_statuses():
                 game.is_complete = True
                 db.session.commit()
 
+def calculate_game_statistics():
+    total_games = Game.query.count()
+    total_rewards = db.session.query(func.sum(Game.pot_size)).scalar() or 0
+    total_players = Player.query.count()
+    completed_games = Game.query.filter_by(is_complete=True)
+    total_time = completed_games.with_entities(func.sum(Game.time_limit)).scalar() or 0
+    avg_time_per_game = total_time / completed_games.count() if completed_games.count() > 0 else 0
+    avg_earnings_per_winner = total_rewards / completed_games.count() if completed_games.count() > 0 else 0
+
+    return {
+        'total_games': total_games,
+        'total_rewards': total_rewards,
+        'total_players': total_players,
+        'total_time': total_time,
+        'avg_time_per_game': avg_time_per_game,
+        'avg_earnings_per_winner': avg_earnings_per_winner
+    }
+
 def main_routes(main):
     @main.route('/')
     def index():
         update_game_statuses()
         games = Game.query.filter_by(is_complete=False).options(joinedload(Game.players)).order_by(Game.start_time).all()
-        return render_template('index.html', games=games, len=len, now=datetime.utcnow())
+        statistics = calculate_game_statistics()
+        return render_template('index.html', games=games, len=len, now=datetime.utcnow(), statistics=statistics)
 
     @main.route('/game/<int:game_id>/join', methods=['GET', 'POST'])
     def join_game(game_id):

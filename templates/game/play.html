@@ -1,30 +1,48 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1 class="text-3xl font-bold mb-6">Game #{{ game.id }}</h1>
+<div class="futuristic-container">
+    <h1 class="text-3xl font-bold mb-6 neon-text">Game #{{ game.id }}</h1>
 
-<div id="timer" class="text-2xl font-bold mb-4">Time left: <span id="countdown"></span></div>
+    <div id="timer" class="text-2xl font-bold mb-4">Time left: <span id="countdown"></span></div>
 
-<form id="answer-form" action="{{ url_for('main.submit_answers', game_id=game.id) }}" method="POST">
-    {% for question in questions %}
-    <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2" for="question-{{ question.id }}">
-            {{ question.phrase }}
-        </label>
-        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
-            id="question-{{ question.id }}" 
-            name="answers[]" 
-            type="text" 
-            placeholder="Your answer">
+    <div class="flex flex-wrap">
+        <div class="w-full lg:w-2/3 pr-4">
+            <form id="answer-form" action="{{ url_for('main.submit_answers', game_id=game.id) }}" method="POST">
+                {% for question in questions %}
+                <div class="mb-4">
+                    <label class="block text-gray-300 text-sm font-bold mb-2" for="question-{{ question.id }}">
+                        {{ question.phrase }}
+                    </label>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                        id="question-{{ question.id }}" 
+                        name="answers[]" 
+                        type="text" 
+                        placeholder="Your answer">
+                </div>
+                {% endfor %}
+                <input type="hidden" name="ethereum_address" id="ethereum-address" value="{{ player_address }}">
+                <button id="submit-answers-btn" class="neon-button" type="submit">
+                    Submit Answers
+                </button>
+            </form>
+        </div>
+        
+        <div class="w-full lg:w-1/3 mt-4 lg:mt-0">
+            <div class="leaderboard">
+                <h2 class="leaderboard-title">Live Leaderboard</h2>
+                <ul id="leaderboard-list" class="leaderboard-list">
+                    {% for player in players %}
+                    <li class="leaderboard-item {% if player.ethereum_address == player_address %}highlighted{% endif %}" data-player-address="{{ player.ethereum_address }}">
+                        <span>{{ player.ethereum_address[:6] }}...{{ player.ethereum_address[-4:] }}</span>
+                        <span class="score">{{ player.score }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
     </div>
-    {% endfor %}
-    <input type="hidden" name="ethereum_address" id="ethereum-address" value="{{ player_address }}">
-    <button id="submit-answers-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" 
-            type="submit">
-        Submit Answers
-    </button>
-</form>
-
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -32,6 +50,7 @@
 let timer;
 let timeLeft = {{ game.time_limit }};
 const gameId = {{ game.id }};
+const playerAddress = "{{ player_address }}";
 
 function startTimer() {
     timer = setInterval(function() {
@@ -75,6 +94,37 @@ function submitAnswers() {
     });
 }
 
+function updateLeaderboard(data) {
+    const leaderboardList = document.getElementById('leaderboard-list');
+    let playerItem = leaderboardList.querySelector(`[data-player-address="${data.player_address}"]`);
+    
+    if (playerItem) {
+        playerItem.querySelector('.score').textContent = data.score;
+    } else {
+        playerItem = document.createElement('li');
+        playerItem.className = 'leaderboard-item';
+        playerItem.setAttribute('data-player-address', data.player_address);
+        
+        if (data.player_address === playerAddress) {
+            playerItem.classList.add('highlighted');
+        }
+        
+        const truncatedAddress = `${data.player_address.slice(0, 6)}...${data.player_address.slice(-4)}`;
+        playerItem.innerHTML = `<span>${truncatedAddress}</span><span class="score">${data.score}</span>`;
+        
+        leaderboardList.appendChild(playerItem);
+    }
+
+    // Sort the leaderboard
+    const players = Array.from(leaderboardList.children);
+    players.sort((a, b) => {
+        const scoreA = parseInt(a.querySelector('.score').textContent);
+        const scoreB = parseInt(b.querySelector('.score').textContent);
+        return scoreB - scoreA;
+    });
+    players.forEach(player => leaderboardList.appendChild(player));
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const socket = io('/game');
     socket.emit('join', { game_id: gameId });
@@ -87,6 +137,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.game_id === gameId) {
             alert('The game has started!');
             startTimer();
+        }
+    });
+
+    socket.on('player_score_update', function(data) {
+        if (data.game_id === gameId) {
+            updateLeaderboard(data);
         }
     });
 
