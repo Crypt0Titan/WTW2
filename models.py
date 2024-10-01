@@ -1,10 +1,10 @@
-from app import db
 from datetime import datetime
+from app import db
 
 class Admin(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
 
 class Game(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -15,7 +15,7 @@ class Game(db.Model):
     start_time = db.Column(db.DateTime, nullable=True)
     is_complete = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    players = db.relationship('Player', backref='game', lazy='dynamic')
+    players = db.relationship('Player', backref='game')
 
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
