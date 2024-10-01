@@ -103,15 +103,35 @@ def create_game():
 
 @app.route('/game/<int:game_id>/join', methods=['GET', 'POST'])
 def join_game(game_id):
-    game = Game.query.get_or_404(game_id)
-    form = JoinGameForm()
-    if form.validate_on_submit():
-        player = Player(game_id=game.id, ethereum_address=form.ethereum_address.data)
-        db.session.add(player)
-        db.session.commit()
-        socketio.emit('player_joined', {'game_id': game.id, 'player_count': len(game.players)}, namespace='/game')
-        return redirect(url_for('game_lobby', game_id=game.id))
-    return render_template('game/join.html', game=game, form=form)
+    try:
+        game = Game.query.get_or_404(game_id)
+        form = JoinGameForm()
+        if form.validate_on_submit():
+            ethereum_address = form.ethereum_address.data
+            existing_player = Player.query.filter_by(game_id=game.id, ethereum_address=ethereum_address).first()
+            
+            if existing_player:
+                flash('You have already joined this game.', 'warning')
+                return redirect(url_for('game_lobby', game_id=game.id))
+            
+            if len(game.players) >= game.max_players:
+                flash('This game is already full.', 'error')
+                return redirect(url_for('index'))
+            
+            player = Player(game_id=game.id, ethereum_address=ethereum_address)
+            db.session.add(player)
+            db.session.commit()
+            
+            socketio.emit('player_joined', {'game_id': game.id, 'player_count': len(game.players)}, namespace='/game')
+            flash('You have successfully joined the game!', 'success')
+            return redirect(url_for('game_lobby', game_id=game.id))
+        
+        return render_template('game/join.html', game=game, form=form)
+    except Exception as e:
+        app.logger.error(f"Error in join_game: {str(e)}")
+        db.session.rollback()
+        flash('An error occurred while joining the game. Please try again.', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/game/<int:game_id>/lobby')
 def game_lobby(game_id):
@@ -179,7 +199,8 @@ def start_game(game_id):
 def game_stats(game_id):
     game = Game.query.get_or_404(game_id)
     players = Player.query.filter_by(game_id=game.id).order_by(Player.score.desc()).all()
-    return render_template('admin/game_stats.html', game=game, players=players)
+    now = datetime.utcnow()
+    return render_template('admin/game_stats.html', game=game, players=players, now=now)
 
 @socketio.on('connect', namespace='/game')
 def handle_connect():

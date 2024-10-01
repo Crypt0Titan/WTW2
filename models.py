@@ -15,6 +15,7 @@ class Game(db.Model):
     start_time = db.Column(db.DateTime, nullable=True)
     is_complete = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    players = db.relationship('Player', backref='game', lazy='dynamic')
 
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
