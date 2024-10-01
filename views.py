@@ -1,12 +1,12 @@
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
-from app import db, socketio
 from models import Game, Player, Question, Admin
+from forms import CreateGameForm, JoinGameForm
+from app import db, socketio
 from utils import check_answers
 from werkzeug.security import check_password_hash
 from functools import wraps
 from datetime import datetime
 from sqlalchemy.orm import joinedload
-from forms import JoinGameForm, CreateGameForm
 import logging
 from routes import main, admin
 
@@ -15,7 +15,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'admin_id' not in session:
             flash('Please log in to access this page.', 'error')
-            return redirect(url_for('main.admin_login'))
+            return redirect(url_for('admin.admin_login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -41,8 +41,9 @@ def join_game(game_id):
             new_player = Player(game_id=game.id, ethereum_address=ethereum_address)
             db.session.add(new_player)
             db.session.commit()
+            logging.info(f"New player joined game {game_id}. Total players: {len(game.players)}")
             flash('You have successfully joined the game!', 'success')
-            socketio.emit('player_joined', {'game_id': game.id, 'player_count': len(game.players)}, namespace='/game')
+            socketio.emit('player_joined', {'game_id': game.id, 'player_count': len(game.players), 'ethereum_address': ethereum_address}, namespace='/game')
         
         return redirect(url_for('main.game_lobby', game_id=game.id))
 
