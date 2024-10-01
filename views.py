@@ -27,7 +27,7 @@ def admin_required(f):
 
 @app.route('/')
 def index():
-    games = Game.query.filter_by(is_complete=False).order_by(Game.start_time).all()
+    games = Game.query.filter_by(is_complete=False).order_by(Game.start_time).options(db.joinedload(Game.players)).all()
     return render_template('index.html', games=games)
 
 @app.route('/admin/login', methods=['GET', 'POST'])

@@ -28,7 +28,7 @@
                 <td class="py-3 px-6 text-left whitespace-nowrap">{{ game.id }}</td>
                 <td class="py-3 px-6 text-left">{{ game.start_time.strftime('%Y-%m-%d %H:%M:%S') if game.start_time else 'Not set' }}</td>
                 <td class="py-3 px-6 text-left">${{ "%.2f"|format(game.pot_size) }}</td>
-                <td class="py-3 px-6 text-left">{{ game.players|length }} / {{ game.max_players }}</td>
+                <td class="py-3 px-6 text-left">{{ game.players.count() }} / {{ game.max_players }}</td>
                 <td class="py-3 px-6 text-left">
                     {% if game.is_complete %}
                         <span class="bg-gray-200 text-gray-700 py-1 px-3 rounded-full text-xs">Completed</span>
