@@ -23,6 +23,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
 function updateCountdown() {
     const startTime = new Date(document.getElementById('start-time').dataset.startTime);
@@ -44,27 +45,41 @@ function updateCountdown() {
 setInterval(updateCountdown, 1000);
 updateCountdown();
 
-const socket = io('/game');
-socket.emit('join', { game_id: {{ game.id }} });
+let socket;
 
-socket.on('player_joined', function(data) {
-    if (data.game_id === {{ game.id }}) {
-        const playerCount = document.getElementById('player-count');
-        playerCount.textContent = data.player_count;
-        
-        // Add the new player to the list
-        const playerList = document.getElementById('player-list');
-        const newPlayer = document.createElement('li');
-        newPlayer.className = 'mb-2';
-        newPlayer.textContent = data.ethereum_address;
-        playerList.appendChild(newPlayer);
-    }
-});
+try {
+    socket = io('/game');
 
-socket.on('game_started', function(data) {
-    if (data.game_id === {{ game.id }}) {
-        window.location.href = "{{ url_for('main.play_game', game_id=game.id) }}";
-    }
-});
+    socket.on('connect', function() {
+        console.log('Connected to server');
+        socket.emit('join', { game_id: {{ game.id }} });
+    });
+
+    socket.on('connect_error', function(error) {
+        console.error('Connection error:', error);
+    });
+
+    socket.on('player_joined', function(data) {
+        if (data.game_id === {{ game.id }}) {
+            const playerCount = document.getElementById('player-count');
+            playerCount.textContent = data.player_count;
+            
+            // Add the new player to the list
+            const playerList = document.getElementById('player-list');
+            const newPlayer = document.createElement('li');
+            newPlayer.className = 'mb-2';
+            newPlayer.textContent = data.ethereum_address;
+            playerList.appendChild(newPlayer);
+        }
+    });
+
+    socket.on('game_started', function(data) {
+        if (data.game_id === {{ game.id }}) {
+            window.location.href = "{{ url_for('main.play_game', game_id=game.id) }}";
+        }
+    });
+} catch (error) {
+    console.error('Error initializing socket:', error);
+}
 </script>
 {% endblock %}
