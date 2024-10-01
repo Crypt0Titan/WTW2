@@ -294,7 +294,6 @@ dependencies = [
     { name = "flask-socketio" },
     { name = "flask-sqlalchemy" },
     { name = "flask-wtf" },
-    { name = "jinja2" },
     { name = "psycopg2-binary" },
 ]
 
@@ -305,7 +304,6 @@ requires-dist = [
     { name = "flask-socketio", specifier = ">=5.3.7" },
     { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
     { name = "flask-wtf", specifier = ">=1.2.1" },
-    { name = "jinja2", specifier = ">=3.1.4" },
     { name = "psycopg2-binary", specifier = ">=2.9.9" },
 ]
 
