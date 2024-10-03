@@ -6,19 +6,18 @@ from werkzeug.security import check_password_hash
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func
-import pytz
 
 def update_game_statuses():
-    current_time = datetime.utcnow()
+    current_time = datetime.utcnow().replace(tzinfo=None)  # Make current time naive (UTC)
     games = Game.query.filter_by(is_complete=False).all()
 
     for game in games:
-        if game.start_time:
-            elapsed_time = current_time - game.start_time
-
-            if elapsed_time.total_seconds() >= game.time_limit:
-                game.is_complete = True
-                db.session.commit()
+        # Ensure game.start_time is naive (UTC)
+        game_start_time = game.start_time.replace(tzinfo=None) if game.start_time.tzinfo else game.start_time
+        if game_start_time <= current_time and not game.is_complete:
+            game.is_complete = True
+            db.session.commit()
+            socketio.emit('game_started', {'game_id': game.id}, namespace='/game')
 
 def calculate_game_statistics():
     total_games = Game.query.count()
@@ -79,12 +78,24 @@ def main_routes(main):
     def play_game(game_id):
         game = Game.query.get_or_404(game_id)
         update_game_statuses()
-        if game.start_time and game.start_time <= datetime.utcnow() and not game.is_complete:
+
+        current_time = datetime.utcnow().replace(tzinfo=None)  # Current time as naive (UTC)
+        game_start_time = game.start_time.replace(tzinfo=None) if game.start_time.tzinfo else game.start_time
+
+        print(f"Current time: {current_time.isoformat()}, Game start time: {game_start_time.isoformat()}, Game complete: {game.is_complete}")
+
+        if game_start_time <= current_time and not game.is_complete:
             questions = Question.query.filter_by(game_id=game.id).all()
             player_address = request.args.get('address', '')
             players = Player.query.filter_by(game_id=game_id).order_by(Player.score.desc()).all()
+
             return render_template('game/play.html', game=game, questions=questions, player_address=player_address, players=players)
         else:
+            if current_time < game_start_time:
+                print("Game has not started yet.")
+            elif game.is_complete:
+                print("Game is already complete.")
+
             flash('The game has not started yet or has already been completed.', 'warning')
             return redirect(url_for('main.game_lobby', game_id=game_id))
 
@@ -140,27 +151,34 @@ def main_routes(main):
         game_id = data['game_id']
         socketio.emit('player_joined', {'game_id': game_id}, namespace='/game')
 
+
 def admin_routes(admin):
     @admin.route('/dashboard')
     def dashboard():
         update_game_statuses()
         games = Game.query.order_by(Game.created_at.desc()).all()
-        current_time = datetime.utcnow()
+        current_time = datetime.utcnow().replace(tzinfo=None)  # Make current time naive (UTC)
         return render_template('admin/dashboard.html', games=games, now=current_time)
 
     @admin.route('/start_game/<int:game_id>', methods=['POST'])
     def start_game(game_id):
         game = Game.query.get_or_404(game_id)
-        if game.start_time and game.start_time <= datetime.utcnow():
+        if game.start_time and game.start_time <= datetime.utcnow().replace(tzinfo=None):
             flash('Game has already started or is in progress!', 'error')
         else:
-            game.start_time = datetime.utcnow()
+            game.start_time = datetime.utcnow().replace(tzinfo=None)  # Set start time to UTC
             db.session.commit()
             flash(f'Game {game_id} has started!', 'success')
 
             socketio.emit('game_started', {'game_id': game.id}, namespace='/game')
 
         return redirect(url_for('admin.dashboard'))
+
+    @admin.route('/game_stats/<int:game_id>')  # Add this route
+    def game_stats(game_id):
+        game = Game.query.get_or_404(game_id)
+        players = Player.query.filter_by(game_id=game_id).order_by(Player.score.desc()).all()
+        return render_template('admin/game_stats.html', game=game, players=players)
 
     @admin.route('/login', methods=['GET', 'POST'])
     def admin_login():
@@ -190,8 +208,11 @@ def admin_routes(admin):
                 max_players=form.max_players.data,
                 pot_size=form.pot_size.data,
                 entry_value=form.entry_value.data,
-                start_time=form.start_time.data
+                start_time=form.start_time.data  # Save as UTC
             )
+
+            # Debugging log
+            print(f"Creating game with start time (UTC): {game.start_time.isoformat()}")  # Log in UTC
             db.session.add(game)
             db.session.commit()
 
@@ -207,9 +228,3 @@ def admin_routes(admin):
             return redirect(url_for('admin.dashboard'))
         return render_template('admin/create_game.html', form=form)
 
-    @admin.route('/game_stats/<int:game_id>')
-    def game_stats(game_id):
-        game = Game.query.get_or_404(game_id)
-        players = Player.query.filter_by(game_id=game_id).order_by(Player.score.desc()).all()
-        current_time = datetime.utcnow()
-        return render_template('admin/game_stats.html', game=game, players=players, now=current_time)

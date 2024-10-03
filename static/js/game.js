@@ -1,27 +1,31 @@
 let timer;
 let timeLeft;
 
-function startTimer(duration) {
-    timeLeft = duration;
-    timer = setInterval(function() {
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        
-        document.getElementById('timer').textContent = 
-            (minutes < 10 ? "0" + minutes : minutes) + ":" + 
-            (seconds < 10 ? "0" + seconds : seconds);
-        
-        if (--timeLeft < 0) {
-            clearInterval(timer);
-            submitAnswers();
-        }
-    }, 1000);
+function updateCountdown() {
+    const countdownElement = document.getElementById('countdown');
+    const startTime = new Date(document.getElementById('start-time').dataset.startTime);
+    const now = new Date();
+    timeLeft = startTime - now;
+
+    if (timeLeft <= 0) {
+        countdownElement.textContent = "Game has started!";
+        clearInterval(timer);  // Ensure the timer is cleared when the game starts
+        window.location.href = "/game/" + gameId + "/play";  // Redirect to play game
+    } else {
+        const seconds = Math.floor(timeLeft / 1000);  // Get total seconds left
+        countdownElement.textContent = seconds + "s";  // Display seconds with 's' to indicate seconds
+    }
+}
+
+function startCountdownTimer() {
+    timer = setInterval(updateCountdown, 1000);  // Keep the setInterval call and clear it as needed
+    updateCountdown();  // Initial call to update countdown
 }
 
 function submitAnswers() {
     const form = document.getElementById('answer-form');
     const formData = new FormData(form);
-    
+
     fetch(form.action, {
         method: 'POST',
         body: formData
@@ -29,7 +33,9 @@ function submitAnswers() {
     .then(response => response.json())
     .then(data => {
         alert(data.message);
-        window.location.href = `/game/${gameId}/result`;
+        if (data.game_complete) {
+            window.location.href = "/game/" + gameId + "/result";  // Redirect to game results page
+        }
     })
     .catch(error => {
         console.error('Error:', error);
@@ -37,20 +43,21 @@ function submitAnswers() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const gameStartTime = new Date(document.getElementById('game-start-time').dataset.startTime);
+    const gameStartTime = new Date(document.getElementById('start-time').dataset.startTime);
     const now = new Date();
-    const timeUntilStart = (gameStartTime - now) / 1000;
-    
+    const timeUntilStart = (gameStartTime - now) / 1000;  // Time until game start in seconds
+
     if (timeUntilStart > 0) {
         setTimeout(() => {
-            startTimer(document.getElementById('time-limit').dataset.timeLimit);
+            startCountdownTimer();  // Start the countdown timer if the game hasn't started yet
         }, timeUntilStart * 1000);
     } else {
-        startTimer(document.getElementById('time-limit').dataset.timeLimit);
+        startCountdownTimer();  // If the game has already started, start the countdown immediately
     }
 
+    // Handle form submission for answers
     document.getElementById('answer-form').addEventListener('submit', function(e) {
-        e.preventDefault();
+        e.preventDefault();  // Prevent default form submission
         submitAnswers();
     });
 });

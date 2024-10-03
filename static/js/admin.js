@@ -1,29 +1,9 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const startGameButtons = document.querySelectorAll('.start-game-btn');
+    // This code block was previously used to add functionality to the "Start Game" buttons
+    // Since the "Start Game" buttons have been removed, the code related to them is no longer needed
 
-    startGameButtons.forEach(button => {
-        button.addEventListener('click', function (event) {
-            event.preventDefault();
-            const gameId = this.getAttribute('data-game-id');
+    // If there are other scripts in this file that are still needed, they should remain
+    // For example, other event listeners or functions that are still relevant to the functionality of the admin panel
 
-            if (gameId) {
-                fetch(`/admin/start_game/${gameId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                })
-                .then(response => {
-                    if (response.ok) {
-                        window.location.reload();
-                    } else {
-                        console.error('Failed to start game.');
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            } else {
-                console.error('Game ID is undefined.');
-            }
-        });
-    });
+    // Any remaining code that is still relevant to the admin panel should go here
 });

@@ -4,17 +4,17 @@
 <div class="futuristic-container">
     <h1 class="text-3xl font-bold mb-6 neon-text">Game #{{ game.id }}</h1>
 
-    <div id="timer" class="text-2xl font-bold mb-4">Time left: <span id="countdown"></span></div>
+    <div id="timer" class="text-2xl font-bold mb-4 neon-clock">Time left: <span id="countdown"></span></div>
 
     <div class="flex flex-wrap">
         <div class="w-full lg:w-2/3 pr-4">
             <form id="answer-form" action="{{ url_for('main.submit_answers', game_id=game.id) }}" method="POST">
                 {% for question in questions %}
                 <div class="mb-4">
-                    <label class="block text-gray-300 text-sm font-bold mb-2" for="question-{{ question.id }}">
+                    <label class="block text-white text-sm font-bold mb-2" for="question-{{ question.id }}">
                         {{ question.phrase }}
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" 
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-300 leading-tight focus:outline-none focus:shadow-outline" 
                         id="question-{{ question.id }}" 
                         name="answers[]" 
                         type="text" 
@@ -32,12 +32,7 @@
             <div class="leaderboard">
                 <h2 class="leaderboard-title">Live Leaderboard</h2>
                 <ul id="leaderboard-list" class="leaderboard-list">
-                    {% for player in players %}
-                    <li class="leaderboard-item {% if player.ethereum_address == player_address %}highlighted{% endif %}" data-player-address="{{ player.ethereum_address }}">
-                        <span>{{ player.ethereum_address[:6] }}...{{ player.ethereum_address[-4:] }}</span>
-                        <span class="score">{{ player.score }}</span>
-                    </li>
-                    {% endfor %}
+                    <!-- Leaderboard items will be dynamically updated -->
                 </ul>
             </div>
         </div>
@@ -54,12 +49,9 @@ const playerAddress = "{{ player_address }}";
 
 function startTimer() {
     timer = setInterval(function() {
-        const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
         
-        document.getElementById('countdown').textContent = 
-            (minutes < 10 ? "0" + minutes : minutes) + ":" + 
-            (seconds < 10 ? "0" + seconds : seconds);
+        document.getElementById('countdown').textContent = (seconds < 10 ? "0" + seconds : seconds);
         
         if (--timeLeft < 0) {
             clearInterval(timer);
@@ -96,70 +88,48 @@ function submitAnswers() {
 
 function updateLeaderboard(data) {
     const leaderboardList = document.getElementById('leaderboard-list');
-    let playerItem = leaderboardList.querySelector(`[data-player-address="${data.player_address}"]`);
-    
-    if (playerItem) {
-        playerItem.querySelector('.score').textContent = data.score;
-    } else {
-        playerItem = document.createElement('li');
-        playerItem.className = 'leaderboard-item';
-        playerItem.setAttribute('data-player-address', data.player_address);
-        
-        if (data.player_address === playerAddress) {
-            playerItem.classList.add('highlighted');
-        }
-        
-        const truncatedAddress = `${data.player_address.slice(0, 6)}...${data.player_address.slice(-4)}`;
-        playerItem.innerHTML = `<span>${truncatedAddress}</span><span class="score">${data.score}</span>`;
-        
-        leaderboardList.appendChild(playerItem);
-    }
+    const playerItem = leaderboardList.querySelector(`[data-player-address="${data.player_address}"]`);
 
-    // Sort the leaderboard
-    const players = Array.from(leaderboardList.children);
-    players.sort((a, b) => {
-        const scoreA = parseInt(a.querySelector('.score').textContent);
-        const scoreB = parseInt(b.querySelector('.score').textContent);
-        return scoreB - scoreA;
-    });
-    players.forEach(player => leaderboardList.appendChild(player));
+    if (!playerItem) {
+        const newPlayerItem = document.createElement('li');
+        newPlayerItem.className = 'leaderboard-item';
+        newPlayerItem.setAttribute('data-player-address', data.player_address);
+        newPlayerItem.innerHTML = `<span>${data.player_address}</span><span class="score">Score: ${data.score}</span>`;
+        leaderboardList.appendChild(newPlayerItem);
+    } else {
+        playerItem.querySelector('.score').textContent = `Score: ${data.score}`;
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const socket = io('/game');
-    socket.emit('join', { game_id: gameId });
-
-    socket.on('connect', () => {
-        console.log('Socket connected!');
-    });
-
-    socket.on('game_started', function(data) {
-        if (data.game_id === gameId) {
-            alert('The game has started!');
-            startTimer();
-        }
-    });
-
-    socket.on('player_score_update', function(data) {
-        if (data.game_id === gameId) {
-            updateLeaderboard(data);
-        }
-    });
-
-    socket.on('game_complete', function(data) {
-        if (data.game_id === gameId) {
-            clearInterval(timer);
-            alert('Game has ended! Redirecting to results page...');
-            window.location.href = "{{ url_for('main.game_result', game_id=game.id) }}";
-        }
-    });
-
-    socket.on('connect_error', (err) => {
-        console.error('Connection Error: ', err);
-        alert('Unable to connect to the game server. Please refresh the page and try again.');
-    });
+    startTimer(); // Ensure the timer starts as soon as the page is ready
 });
 
-startTimer();
+const socket = io('/game');
+
+socket.on('game_started', function(data) {
+    if (data.game_id === gameId) {
+        alert('The game has started!');
+    }
+});
+
+socket.on('player_score_update', function(data) {
+    if (data.game_id === gameId) {
+        updateLeaderboard(data);
+    }
+});
+
+socket.on('game_complete', function(data) {
+    if (data.game_id === gameId) {
+        clearInterval(timer);
+        alert('Game has ended! Redirecting to results page...');
+        window.location.href = "{{ url_for('main.game_result', game_id=game.id) }}";
+    }
+});
+
+socket.on('connect_error', function(err) {
+    console.error('Connection Error: ', err);
+    alert('Unable to connect to the game server. Please refresh the page and try again.');
+});
 </script>
 {% endblock %}

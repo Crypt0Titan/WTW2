@@ -8,12 +8,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
     {% block extra_css %}{% endblock %}
+    <style>
+        /* Custom neon styles for the navigation */
+        .neon-nav {
+            background-color: #00ffff; /* Neon background color */
+            box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 15px #00ffff; /* Neon glow effect */
+            border: 1px solid #00ffff; /* Neon border */
+        }
+        
+        .neon-nav a {
+            color: #212121; /* Dark text color for contrast */
+            text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff; /* Glow effect for text */
+            transition: color 0.3s ease; /* Smooth transition for hover effect */
+        }
+        
+        .neon-nav a:hover {
+            color: #ffffff; /* Change text color on hover */
+            text-shadow: 0 0 10px #ffffff, 0 0 20px #ffffff; /* Brighter glow on hover */
+        }
+    </style>
 </head>
-<body class="bg-gray-100">
-    <nav class="bg-blue-600 p-4">
+<body class="bg-[#212121]">  <!-- Set dark background color -->
+    <nav class="neon-nav p-4">
         <div class="container mx-auto flex justify-between items-center">
-            <a href="{{ url_for('main.index') }}" class="text-white text-2xl font-bold">Win The Wallet</a>
-            <a href="{{ url_for('admin.dashboard') }}" class="text-white">Admin</a>
+            <a href="{{ url_for('main.index') }}" class="text-2xl font-bold">Win The Wallet</a>
+            <a href="{{ url_for('admin.dashboard') }}">Admin</a>
         </div>
     </nav>
 

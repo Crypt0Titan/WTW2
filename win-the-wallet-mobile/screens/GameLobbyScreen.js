@@ -14,18 +14,20 @@ export default function GameLobbyScreen({ route, navigation }) {
 
   useEffect(() => {
     fetchGameDetails();
-
     socket.emit('join', { game_id: gameId });
 
-    socket.on('player_joined', (data) => {
+    socket.on('player_joined', data => {
       if (data.game_id === gameId) {
         setPlayers(prevPlayers => [...prevPlayers, data.player]);
       }
     });
 
-    socket.on('game_started', (data) => {
+    socket.on('game_started', data => {
       if (data.game_id === gameId) {
-        navigation.navigate('PlayGame', { gameId });
+        console.log('Redirecting to play game.');
+        navigation.navigate('PlayGameScreen', { gameId });
+      } else {
+        console.log('Game ID mismatch or not received:', data.game_id);
       }
     });
 
@@ -59,9 +61,8 @@ export default function GameLobbyScreen({ route, navigation }) {
       const startTime = new Date(game.start_time);
       const timeLeft = startTime - now;
       if (timeLeft > 0) {
-        const minutes = Math.floor(timeLeft / 60000);
-        const seconds = Math.floor((timeLeft % 60000) / 1000);
-        setCountdown(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+        const seconds = Math.floor(timeLeft / 1000);
+        setCountdown(`${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`);
       } else {
         setCountdown('Game starting...');
       }
@@ -71,7 +72,7 @@ export default function GameLobbyScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#00ffff" /> {/* Color adjusted to fit your theme */}
       </View>
     );
   }
@@ -94,6 +95,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#2C2C2C', // Matching your theme colors
   },
   centered: {
     flex: 1,
@@ -104,18 +106,22 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
+    color: '#00FFFF', // Neon color for text
   },
   countdown: {
     fontSize: 18,
     marginBottom: 20,
+    color: '#00FFFF', // Neon color for text
   },
   subtitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+    color: '#FFFFFF', // Text color
   },
   playerItem: {
     fontSize: 16,
     marginBottom: 5,
+    color: '#FFFFFF', // Text color
   },
 });
