@@ -1,135 +1,202 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="futuristic-container">
-    <h1 class="text-3xl font-bold mb-6 neon-text">Game #{{ game.id }}</h1>
+<!-- Game Title -->
+<div class="container mx-auto mt-10">
+    <h1 class="text-5xl font-bold text-center neon-text mb-8">Game #{{ game.id }}</h1>
+</div>
 
-    <div id="timer" class="text-2xl font-bold mb-4 neon-clock">Time left: <span id="countdown"></span></div>
-
-    <div class="flex flex-wrap">
-        <div class="w-full lg:w-2/3 pr-4">
-            <form id="answer-form" action="{{ url_for('main.submit_answers', game_id=game.id) }}" method="POST">
-                {% for question in questions %}
-                <div class="mb-4">
-                    <label class="block text-white text-sm font-bold mb-2" for="question-{{ question.id }}">
-                        {{ question.phrase }}
-                    </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-300 leading-tight focus:outline-none focus:shadow-outline" 
-                        id="question-{{ question.id }}" 
-                        name="answers[]" 
-                        type="text" 
-                        placeholder="Your answer">
-                </div>
-                {% endfor %}
-                <input type="hidden" name="ethereum_address" id="ethereum-address" value="{{ player_address }}">
-                <button id="submit-answers-btn" class="neon-button" type="submit">
-                    Submit Answers
-                </button>
-            </form>
+<!-- Game Information Container -->
+<div class="container mx-auto mb-8 bg-gray-800 rounded-lg p-6 shadow-lg text-white">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <h2 class="text-2xl font-bold neon-text">Game Information</h2>
+            <p class="mt-2"><strong>Pot Size:</strong> ${{ "%.2f"|format(game.pot_size) }}</p>
+            <p class="mt-2"><strong>Entry Value:</strong> ${{ "%.2f"|format(game.entry_value) }}</p>
+            <p class="mt-2"><strong>Players:</strong> {{ players|length }} / {{ game.max_players }}</p>
         </div>
-        
-        <div class="w-full lg:w-1/3 mt-4 lg:mt-0">
-            <div class="leaderboard">
-                <h2 class="leaderboard-title">Live Leaderboard</h2>
-                <ul id="leaderboard-list" class="leaderboard-list">
-                    <!-- Leaderboard items will be dynamically updated -->
-                </ul>
+        <!-- Countdown Timer -->
+        <div class="text-center">
+            <h2 class="text-2xl font-bold neon-text">Time Remaining</h2>
+            <span id="countdown" class="text-3xl neon-clock" data-end-time="{{ make_aware(game.end_time).isoformat() if game.end_time else '' }}"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Game Questions Section -->
+<div class="container mx-auto p-6 shadow-lg text-white" style="background-color: #121212;">
+    <div class="flex">
+        <!-- Navigation Blocks for Each Question (two columns, aligned left) -->
+        <div class="mr-8">
+            <div class="flex">
+                <div class="grid grid-cols-1 gap-2 mr-4">
+                    {% for i in range(1, 7) %}
+                    <div class="question-box w-12 h-12 text-center flex items-center justify-center text-white font-bold border-2 border-white cursor-pointer" 
+                         data-index="{{ i }}" style="background-color: transparent;">
+                        {{ i }}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="grid grid-cols-1 gap-2">
+                    {% for i in range(7, 13) %}
+                    <div class="question-box w-12 h-12 text-center flex items-center justify-center text-white font-bold border-2 border-white cursor-pointer" 
+                         data-index="{{ i }}" style="background-color: transparent;">
+                        {{ i }}
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
+        </div>
+
+        <!-- Questions and Answers Area -->
+        <div class="flex-grow">
+            <form method="POST" action="{{ url_for('main.submit_answers', game_id=game.id) }}" id="questions-form">
+                <div id="questions-container" class="relative" style="min-height: 300px;">
+                    {% for question in questions %}
+                    <div class="question-container text-center p-6 absolute w-full transition-all duration-500 ease-in-out" 
+                         data-index="{{ loop.index }}" 
+                         style="display: {% if loop.first %}block{% else %}none{% endif %}; 
+                                border: 2px solid transparent; 
+                                transform: translateX({% if loop.first %}0%{% else %}100%{% endif %});">
+                        <label class="block text-4xl font-bold text-white mb-4">{{ question.phrase }}</label>
+                        <div class="flex flex-col items-center">
+                            <input type="text" name="answers[]" class="answer-input mt-4 p-2 rounded-lg shadow-md text-black text-center" 
+                                   data-index="{{ loop.index }}" style="width: 30%; margin: 20px auto;" required>
+                            <div class="flex justify-center mt-4">
+                                <button type="button" class="next-question-btn neon-button px-4 py-2 mr-4">Next Question</button>
+                                <button type="button" class="skip-question-btn neon-button px-4 py-2">Skip Question</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Submit Button -->
+                <div class="mt-8 text-center">
+                    <button type="submit" class="neon-button text-lg font-bold py-2 px-8" id="submit-btn" disabled>Submit Answers</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 {% endblock %}
 
+
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
-let timer;
-let timeLeft = {{ game.time_limit }};
-const gameId = {{ game.id }};
-const playerAddress = "{{ player_address }}";
-
-function startTimer() {
-    timer = setInterval(function() {
-        const seconds = timeLeft % 60;
-        
-        document.getElementById('countdown').textContent = (seconds < 10 ? "0" + seconds : seconds);
-        
-        if (--timeLeft < 0) {
-            clearInterval(timer);
-            submitAnswers();
-        }
-    }, 1000);
-}
-
-function submitAnswers() {
-    const form = document.getElementById('answer-form');
-    const formData = new FormData(form);
-    
-    fetch(form.action, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        alert(data.message);
-        if (data.game_complete) {
-            window.location.href = "{{ url_for('main.game_result', game_id=game.id) }}";
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred while submitting answers. Please try again.');
-    });
-}
-
-function updateLeaderboard(data) {
-    const leaderboardList = document.getElementById('leaderboard-list');
-    const playerItem = leaderboardList.querySelector(`[data-player-address="${data.player_address}"]`);
-
-    if (!playerItem) {
-        const newPlayerItem = document.createElement('li');
-        newPlayerItem.className = 'leaderboard-item';
-        newPlayerItem.setAttribute('data-player-address', data.player_address);
-        newPlayerItem.innerHTML = `<span>${data.player_address}</span><span class="score">Score: ${data.score}</span>`;
-        leaderboardList.appendChild(newPlayerItem);
-    } else {
-        playerItem.querySelector('.score').textContent = `Score: ${data.score}`;
-    }
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-    startTimer(); // Ensure the timer starts as soon as the page is ready
-});
+    const questions = document.querySelectorAll('.question-container');
+    const questionBoxes = document.querySelectorAll('.question-box');
+    const submitBtn = document.getElementById('submit-btn');
+    const skippedQuestions = new Set();
+    let answeredQuestions = new Set();
+    let currentQuestionIndex = 0;
 
-const socket = io('/game');
+    const neonGreen = '#39FF14';
+    const neonYellow = '#FFFF00';
+    const pageBackgroundColor = '#121212';
 
-socket.on('game_started', function(data) {
-    if (data.game_id === gameId) {
-        alert('The game has started!');
+    function updateQuestionBoxColor(index, color) {
+        questionBoxes[index].style.backgroundColor = color;
+        if (color === 'transparent') {
+            questionBoxes[index].style.color = 'white'; // Default text color
+        } else {
+            questionBoxes[index].style.color = pageBackgroundColor; // Page background color
+        }
     }
-});
-
-socket.on('player_score_update', function(data) {
-    if (data.game_id === gameId) {
-        updateLeaderboard(data);
+    
+    function showQuestion(index) {
+        questions.forEach((q, i) => {
+            if (i === index) {
+                q.style.display = 'block';
+                q.style.transform = 'translateX(0%)';
+                q.style.opacity = '1';
+            } else {
+                q.style.display = 'none';
+                q.style.transform = 'translateX(100%)';
+                q.style.opacity = '0';
+            }
+        });
+        currentQuestionIndex = index;
     }
-});
 
-socket.on('game_complete', function(data) {
-    if (data.game_id === gameId) {
-        clearInterval(timer);
-        alert('Game has ended! Redirecting to results page...');
-        window.location.href = "{{ url_for('main.game_result', game_id=game.id) }}";
+    function updateSubmitButtonState() {
+        if (answeredQuestions.size + skippedQuestions.size === questions.length) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50');
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50');
+        }
     }
-});
 
-socket.on('connect_error', function(err) {
-    console.error('Connection Error: ', err);
-    alert('Unable to connect to the game server. Please refresh the page and try again.');
+    function moveToNextQuestion() {
+        if (currentQuestionIndex < questions.length - 1) {
+            showQuestion(currentQuestionIndex + 1);
+        }
+    }
+
+    questionBoxes.forEach((box, index) => {
+        box.addEventListener('click', function() {
+            showQuestion(index);
+        });
+    });
+
+    questions.forEach((question, index) => {
+        const input = question.querySelector('input');
+        const nextBtn = question.querySelector('.next-question-btn');
+        const skipBtn = question.querySelector('.skip-question-btn');
+
+        input.addEventListener('input', function() {
+            if (input.value.trim() !== '') {
+                updateQuestionBoxColor(index, neonGreen);
+                answeredQuestions.add(index);
+                skippedQuestions.delete(index);
+            } else {
+                updateQuestionBoxColor(index, 'transparent');
+                answeredQuestions.delete(index);
+            }
+            updateSubmitButtonState();
+        });
+
+        nextBtn.addEventListener('click', function() {
+            if (input.value.trim() !== '') {
+                moveToNextQuestion();
+            }
+        });
+
+        skipBtn.addEventListener('click', function() {
+            updateQuestionBoxColor(index, neonYellow);
+            skippedQuestions.add(index);
+            answeredQuestions.delete(index);
+            moveToNextQuestion();
+            updateSubmitButtonState();
+        });
+    });
+
+    // Countdown logic (for game duration)
+    const endTimeElement = document.getElementById('countdown');
+    const endTimeStr = endTimeElement.dataset.endTime;
+    if (endTimeStr) {
+        const endTime = new Date(endTimeStr);
+        if (!isNaN(endTime)) {
+            function updateCountdown() {
+                const now = new Date();
+                const timeLeft = endTime - now;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    endTimeElement.textContent = "Game Over!";
+                } else {
+                    const minutes = Math.floor(timeLeft / 60000);
+                    const seconds = Math.floor((timeLeft % 60000) / 1000);
+                    endTimeElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+            const timer = setInterval(updateCountdown, 1000);
+            updateCountdown(); // Call immediately to avoid delay in initial display
+        }
+    }
 });
 </script>
 {% endblock %}

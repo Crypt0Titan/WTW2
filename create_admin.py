@@ -3,23 +3,32 @@ from models import Admin
 from werkzeug.security import generate_password_hash
 import logging
 
+# Set up logging
 logging.basicConfig(level=logging.INFO)
 
-def create_admin_user():
+def recreate_admin_user():
+    """Delete the existing admin user and create a new one."""
     with app.app_context():
         try:
-            # Check if admin user already exists
-            admin = Admin.query.filter_by(username='admin').first()
-            if not admin:
-                # Create a new admin user
-                new_admin = Admin(username='admin', password_hash=generate_password_hash('adminpassword'))
-                db.session.add(new_admin)
+            # Check if the admin user exists
+            admin = Admin.query.filter_by(username='TitanAdmin').first()
+
+            if admin:
+                # Delete the existing admin user
+                db.session.delete(admin)
                 db.session.commit()
-                logging.info("Admin user created successfully.")
+                logging.info(f"Admin user '{admin.username}' deleted successfully.")
             else:
-                logging.info("Admin user already exists.")
+                logging.info("No existing admin user found.")
+
+            # Create the new admin user
+            new_admin = Admin(username='TitanAdmin', password_hash=generate_password_hash('MMAvsBJJ911!'))
+            db.session.add(new_admin)
+            db.session.commit()
+            logging.info("New admin user 'TitanAdmin' created successfully.")
+
         except Exception as e:
-            logging.error(f"Error creating admin user: {str(e)}")
+            logging.error(f"Error managing admin user: {str(e)}")
 
 if __name__ == "__main__":
-    create_admin_user()
+    recreate_admin_user()  # Delete existing admin and create new one

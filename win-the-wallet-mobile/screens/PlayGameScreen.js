@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
@@ -13,6 +13,39 @@ export default function PlayGameScreen({ route, navigation }) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [ethereumAddress, setEthereumAddress] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const fetchGameData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [questionsResponse, gameResponse] = await Promise.all([
+        fetch(`${API_URL}/api/games/${gameId}/questions`),
+        fetch(`${API_URL}/api/games/${gameId}`)
+      ]);
+
+      if (!questionsResponse.ok || !gameResponse.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const questionsData = await questionsResponse.json();
+      const gameData = await gameResponse.json();
+
+      setQuestions(questionsData);
+
+      // Calculate time left based on current time and game end time
+      const now = new Date();
+      const endTime = new Date(gameData.end_time);
+      const timeLeftInSeconds = Math.max(0, Math.floor((endTime - now) / 1000));
+      setTimeLeft(timeLeftInSeconds);
+
+      const address = await AsyncStorage.getItem('ethereumAddress');
+      if (address) setEthereumAddress(address);
+    } catch (error) {
+      console.error('Error fetching game data:', error);
+      Alert.alert('Error', 'Unable to fetch game data. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  }, [gameId]);
 
   useEffect(() => {
     fetchGameData();
@@ -38,29 +71,7 @@ export default function PlayGameScreen({ route, navigation }) {
       clearInterval(timer);
       socket.off('game_complete');
     };
-  }, [gameId]);
-
-  const fetchGameData = async () => {
-    try {
-      setLoading(true);
-      const [questionsResponse, gameResponse] = await Promise.all([
-        fetch(`${API_URL}/api/games/${gameId}/questions`),
-        fetch(`${API_URL}/api/games/${gameId}`)
-      ]);
-      const questionsData = await questionsResponse.json();
-      const gameData = await gameResponse.json();
-      setQuestions(questionsData);
-      setTimeLeft(gameData.time_limit);
-
-      const address = await AsyncStorage.getItem('ethereumAddress');
-      if (address) setEthereumAddress(address);
-    } catch (error) {
-      console.error('Error fetching game data:', error);
-      Alert.alert('Error', 'Unable to fetch game data. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [gameId, fetchGameData, navigation]);
 
   const handleAnswerChange = (questionId, text) => {
     setAnswers(prevAnswers => ({
@@ -84,6 +95,10 @@ export default function PlayGameScreen({ route, navigation }) {
           })),
         }),
       });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
 
       const result = await response.json();
       Alert.alert('Result', result.message);
@@ -126,6 +141,10 @@ export default function PlayGameScreen({ route, navigation }) {
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  // ... (styles remain unchanged)
+});
 
 const styles = StyleSheet.create({
   container: {

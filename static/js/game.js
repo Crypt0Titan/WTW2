@@ -1,63 +1,181 @@
-let timer;
-let timeLeft;
+        document.addEventListener('DOMContentLoaded', function() {
+            const isPlayGamePage = document.getElementById('answer-form');
+            const isLobbyPage = document.getElementById('join-game-form') || document.getElementById('countdown');
 
-function updateCountdown() {
-    const countdownElement = document.getElementById('countdown');
-    const startTime = new Date(document.getElementById('start-time').dataset.startTime);
-    const now = new Date();
-    timeLeft = startTime - now;
+            if (isPlayGamePage) {
+                initializePlayGame();
+            } else if (isLobbyPage) {
+                initializeLobby();
+            }
+        });
 
-    if (timeLeft <= 0) {
-        countdownElement.textContent = "Game has started!";
-        clearInterval(timer);  // Ensure the timer is cleared when the game starts
-        window.location.href = "/game/" + gameId + "/play";  // Redirect to play game
-    } else {
-        const seconds = Math.floor(timeLeft / 1000);  // Get total seconds left
-        countdownElement.textContent = seconds + "s";  // Display seconds with 's' to indicate seconds
-    }
-}
+        function initializePlayGame() {
+            const form = document.getElementById('answer-form');
+            const countdownElement = document.getElementById('countdown');
+            const endTimeStr = countdownElement.getAttribute('data-end-time');
+            const gameId = parseInt(form.dataset.gameId);
+            const playerAddress = form.dataset.playerAddress;
 
-function startCountdownTimer() {
-    timer = setInterval(updateCountdown, 1000);  // Keep the setInterval call and clear it as needed
-    updateCountdown();  // Initial call to update countdown
-}
+            if (!endTimeStr) {
+                console.error('Game end time not provided.');
+                return;
+            }
 
-function submitAnswers() {
-    const form = document.getElementById('answer-form');
-    const formData = new FormData(form);
+            const endTime = new Date(endTimeStr);
+            let timer;
 
-    fetch(form.action, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert(data.message);
-        if (data.game_complete) {
-            window.location.href = "/game/" + gameId + "/result";  // Redirect to game results page
+            function startTimer() {
+                function updateCountdown() {
+                    const now = new Date();
+                    const timeLeft = endTime - now;
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        submitAnswers();
+                    } else {
+                        const minutes = Math.floor(timeLeft / 60000);
+                        const seconds = Math.floor((timeLeft % 60000) / 1000);
+                        const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        countdownElement.textContent = formattedTime;
+                    }
+                }
+
+                updateCountdown();
+                timer = setInterval(updateCountdown, 1000);
+            }
+
+            function submitAnswers() {
+                const formData = new FormData(form);
+
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        alert(data.message || "An error occurred while submitting your answers.");
+                        if (data.redirect_url) {
+                            window.location.href = data.redirect_url;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error in submitAnswers:', error);
+                    alert('An error occurred while submitting answers. Please try again.');
+                });
+            }
+
+            startTimer();
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                clearInterval(timer);
+                submitAnswers();
+            });
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
-}
 
-document.addEventListener('DOMContentLoaded', function() {
-    const gameStartTime = new Date(document.getElementById('start-time').dataset.startTime);
-    const now = new Date();
-    const timeUntilStart = (gameStartTime - now) / 1000;  // Time until game start in seconds
+        function initializeLobby() {
+            const gameId = parseInt(document.getElementById('game-id').value);
+            const countdownElement = document.getElementById('countdown');
+            let timer;
 
-    if (timeUntilStart > 0) {
-        setTimeout(() => {
-            startCountdownTimer();  // Start the countdown timer if the game hasn't started yet
-        }, timeUntilStart * 1000);
-    } else {
-        startCountdownTimer();  // If the game has already started, start the countdown immediately
-    }
+            function updateLobbyCountdown() {
+                const startTimeStr = countdownElement.dataset.startTime;
 
-    // Handle form submission for answers
-    document.getElementById('answer-form').addEventListener('submit', function(e) {
-        e.preventDefault();  // Prevent default form submission
-        submitAnswers();
-    });
-});
+                if (!startTimeStr) {
+                    console.error('Game start time is not set.');
+                    return;
+                }
+
+                const startTime = new Date(startTimeStr);
+                const now = new Date();
+                const timeLeft = startTime - now;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    window.location.href = `/game/${gameId}/play`;
+                } else {
+                    const minutes = Math.floor(timeLeft / 60000);
+                    const seconds = Math.floor((timeLeft % 60000) / 1000);
+                    const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    countdownElement.textContent = formattedTime;
+                }
+            }
+
+            updateLobbyCountdown();
+            timer = setInterval(updateLobbyCountdown, 1000);
+
+            const joinGameForm = document.getElementById('join-game-form');
+            if (joinGameForm) {
+                joinGameForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const formData = new FormData(joinGameForm);
+
+                    fetch(joinGameForm.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Server error: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            const playerCountElement = document.getElementById('player-count');
+                            if (playerCountElement && data.player_count) {
+                                playerCountElement.textContent = data.player_count;
+                            }
+                            alert('Successfully joined the game!');
+                            window.location.reload();
+                        } else {
+                            throw new Error(data.message || 'Failed to join the game.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error in joinGame:', error);
+                        alert(error.message || 'An error occurred. Please try again.');
+                    });
+                });
+            }
+
+            initializeSocket(gameId);
+        }
+
+        function initializeSocket(gameId) {
+            if (typeof io !== 'undefined') {
+                const socket = io('/game');
+
+                socket.on('connect', function() {
+                    console.log('Connected to game namespace');
+                });
+
+                socket.on('game_started', function(data) {
+                    if (data.game_id === gameId) {
+                        console.log('Game started event received.');
+                        window.location.href = `/game/${gameId}/play`;
+                    }
+                });
+
+                socket.on('connect_error', function(error) {
+                    console.error('Connection error:', error);
+                });
+            } else {
+                console.error('Socket.io is not available');
+            }
+        }

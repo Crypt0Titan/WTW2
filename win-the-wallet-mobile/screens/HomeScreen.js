@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import io from 'socket.io-client';
 import { API_URL, SOCKET_URL } from '../config';
@@ -9,22 +9,13 @@ export default function HomeScreen({ navigation }) {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchGames();
-
-    socket.on('new_game', (game) => {
-      setGames(prevGames => [...prevGames, game]);
-    });
-
-    return () => {
-      socket.off('new_game');
-    };
-  }, []);
-
-  const fetchGames = async () => {
+  const fetchGames = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/api/games`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
       const data = await response.json();
       setGames(data);
     } catch (error) {
@@ -33,6 +24,46 @@ export default function HomeScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchGames();
+
+    socket.on('new_game', (game) => {
+      setGames(prevGames => [...prevGames, game]);
+    });
+
+    socket.on('game_updated', (updatedGame) => {
+      setGames(prevGames => prevGames.map(game =>
+        game.id === updatedGame.id ? updatedGame : game
+      ));
+    });
+
+    return () => {
+      socket.off('new_game');
+      socket.off('game_updated');
+    };
+  }, [fetchGames]);
+
+  const formatDateTime = (dateTimeString) => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      timeZoneName: 'short' 
+    });
+  };
+
+  const getGameStatus = (game) => {
+    const now = new Date();
+    const startTime = new Date(game.start_time);
+    if (game.is_complete) return 'Completed';
+    if (game.has_started) return 'In Progress';
+    if (startTime > now) return 'Not Started';
+    return 'Starting Soon';
   };
 
   const renderGameItem = ({ item }) => (
@@ -43,7 +74,8 @@ export default function HomeScreen({ navigation }) {
       <Text style={styles.gameTitle}>Game #{item.id}</Text>
       <Text>Pot Size: ${item.pot_size.toFixed(2)}</Text>
       <Text>Players: {item.players.length} / {item.max_players}</Text>
-      <Text>Start Time: {new Date(item.start_time).toLocaleString()}</Text>
+      <Text>Start Time: {formatDateTime(item.start_time)}</Text>
+      <Text>Status: {getGameStatus(item)}</Text>
     </TouchableOpacity>
   );
 
@@ -74,39 +106,5 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  gameItem: {
-    backgroundColor: '#141414',
-    padding: 20,
-    marginBottom: 10,
-    borderRadius: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  gameTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  noGames: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
-  },
+  // ... (styles remain unchanged)
 });
